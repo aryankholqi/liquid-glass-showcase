@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useSpring } from "framer-motion";
+import { motion } from "framer-motion";
 import { LiquidGlass } from "@/components/liquid-glass";
 import { HERO_CONFIG, INSTALL_COMMAND } from "@/lib/props";
 
@@ -28,34 +28,24 @@ export function Typewriter() {
 
 export function HeroDemo() {
   const stageRef = useRef<HTMLDivElement>(null);
-  const x = useSpring(0, { stiffness: 130, damping: 18 });
-  const y = useSpring(0, { stiffness: 130, damping: 18 });
 
   return (
     <div
       ref={stageRef}
       className="stage"
-      onMouseMove={(event) => {
-        const rect = stageRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        x.set(((event.clientX - rect.left - rect.width / 2) / rect.width) * 26);
-        y.set(((event.clientY - rect.top - rect.height / 2) / rect.height) * 16);
-      }}
-      onMouseLeave={() => {
-        x.set(0);
-        y.set(0);
-      }}
     >
       <div className="stage-bg" />
       <span className="g1" />
       <span className="g2" />
       <div className="stage-note">refraction · depth · dispersion</div>
-      <motion.div className="hero-card" style={{ x, y }}>
+      <motion.div className="hero-card" >
         <LiquidGlass {...HERO_CONFIG}>
           <div className="card-body">
             <div className="card-row">
               <span className="card-title">Now Playing</span>
-              <span className="card-time">02:14</span>
+              <span className="card-time">
+                02:14
+              </span>
             </div>
             <div className="card-track">
               <i />
