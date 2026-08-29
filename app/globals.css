@@ -392,9 +392,10 @@ input[type="range"] { accent-color: var(--color-accent); }
   .hero h1 { font-size: clamp(28px, 8.6vw, 36px); max-width: none; margin-bottom: 14px; }
   .hero-lede { font-size: 15px; max-width: none; }
   .features { grid-template-columns: 1fr; }
-  .install { flex-wrap: wrap; padding: 12px 12px 12px 14px; }
-  .install code { flex-basis: 100%; order: 3; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
-  .install .copy-btn { margin-left: auto; min-height: 36px; }
+  .install { flex-wrap: nowrap; align-items: baseline; gap: 8px; padding: 10px 12px 10px 14px; }
+  .install-sigil { font-size: 12px; line-height: 1.4; }
+  .install code { flex: 1 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+  .install .copy-btn { margin-left: auto; min-height: 34px; padding: 8px 11px; }
   .cta-row { flex-direction: column; align-items: stretch; }
   .cta-row a { justify-content: center; min-height: 46px; }
   .sliders { grid-template-columns: 1fr; gap: 6px; }
