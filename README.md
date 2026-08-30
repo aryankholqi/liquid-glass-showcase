@@ -64,7 +64,7 @@ All standard `div` props are supported, plus:
 |---|---|---|---|
 | `tint` | `string` | `"rgba(17, 21, 27, 0.8)"` | Fill color layered over the refracted backdrop. Any CSS color. |
 | `cornerRadius` | `number` | `0` | Corner radius in pixels. |
-| `cornerSmoothing` | `number` | `60` | Continuity of the corner curve. `0` is a plain circular arc, `100` a full squircle. |
+| `cornerSmoothing` | `number` | `60` | Continuity of the corner curve. `0` is a plain circular arc, `100` the squircle Apple draws — identical to CSS `corner-shape: squircle`. |
 | `refraction` | `number` | `100` | How strongly the backdrop bends at the edges (0–100). |
 | `depth` | `number` | `60` | Thickness of the refracting edge band — the perceived glass depth (0–100). |
 | `dispersion` | `number` | `70` | Chromatic aberration: how far the red and blue channels split (0–100). |

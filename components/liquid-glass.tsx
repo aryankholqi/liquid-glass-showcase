@@ -16,7 +16,10 @@ export interface LiquidGlassProps {
   tint?: string;
   /** Corner radius in pixels. */
   cornerRadius?: number;
-  /** Continuity of the corner curve — 0 is a plain circular arc, 100 a full squircle. */
+  /**
+   * Continuity of the corner curve — 0 is a plain circular arc, 100 the
+   * squircle Apple draws, matching CSS `corner-shape: squircle` exactly.
+   */
   cornerSmoothing?: number;
   /** How strongly the backdrop bends at the edges. 0–100. */
   refraction?: number;
@@ -54,9 +57,14 @@ const MAX_DEVIATION = Math.tan(Math.PI / 2 - Math.asin(1 / IOR));
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/** Superellipse exponent for a smoothing amount. 2 is a circular corner. */
-function cornerExponent(cornerSmoothing: number) {
-  return 2 + clamp01(cornerSmoothing / 100) * 3.2;
+/**
+ * Superness of the corner, on the scale CSS `corner-shape: superellipse(k)`
+ * uses: the drawn curve is |x|^(2^k) + |y|^(2^k) = 1, so k = 1 is `round` and
+ * k = 2 is `squircle` — the corner Apple draws. Smoothing walks exactly that
+ * span, which keeps our own geometry and the browser's in lockstep.
+ */
+function cornerSuperness(cornerSmoothing: number) {
+  return 1 + clamp01(cornerSmoothing / 100);
 }
 
 /**
@@ -263,8 +271,17 @@ export function LiquidGlass({
 }: LiquidGlassProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [nativeCorners, setNativeCorners] = useState(false);
   const rawId = useId();
   const filterId = `lg-${rawId.replace(/[^a-zA-Z0-9]/g, "")}`;
+
+  useEffect(() => {
+    setNativeCorners(
+      typeof CSS !== "undefined" &&
+        typeof CSS.supports === "function" &&
+        CSS.supports("corner-shape", "squircle")
+    );
+  }, []);
 
   useEffect(() => {
     const el = hostRef.current;
@@ -282,7 +299,8 @@ export function LiquidGlass({
 
   const { width, height } = size;
   const measured = width > 1 && height > 1;
-  const exponent = cornerExponent(cornerSmoothing);
+  const superness = cornerSuperness(cornerSmoothing);
+  const exponent = Math.pow(2, superness);
   // The bevel is a fixed slice of the smaller side, capped so large panels keep
   // a rim instead of turning into one big lens.
   const band = Math.max(2, (depth / 100) * Math.min(Math.min(width, height) * 0.18, 26));
@@ -313,12 +331,37 @@ export function LiquidGlass({
     ? { clipPath: `path("${shape}")`, WebkitClipPath: `path("${shape}")` }
     : {};
 
+  /**
+   * A backdrop-filter is clipped by the border box and its corners and by
+   * nothing else — clip-path and masks leave it alone. So the squircle has to
+   * reach the refracting layers through border-radius, which is exactly what
+   * corner-shape adds. With it every layer, its shadows and its filtered
+   * backdrop all land on one outline.
+   *
+   * Without it, a circular border-radius would cut the squircle's corners off,
+   * so the fallback squares the box and clips with the path instead: the frost
+   * spills to the corners of the box, but nothing is bitten out of the panel.
+   */
+  const corners: CSSProperties = nativeCorners
+    ? ({
+        borderRadius: cornerRadius,
+        cornerShape: `superellipse(${superness.toFixed(3)})`,
+      } as CSSProperties)
+    : { borderRadius: shape ? 0 : "inherit", ...clip };
+
+  /** Shapes an inset or drop shadow, which a radius forms rather than clips. */
+  const shadowCorners: CSSProperties = nativeCorners
+    ? ({
+        borderRadius: cornerRadius,
+        cornerShape: `superellipse(${superness.toFixed(3)})`,
+      } as CSSProperties)
+    : { borderRadius: "inherit" };
+
   const layer: CSSProperties = {
     position: "absolute",
     inset: 0,
-    borderRadius: "inherit",
     pointerEvents: "none",
-    ...clip,
+    ...corners,
   };
 
   const maskLayer = (maskWidth: number, blur: number, peak: number): CSSProperties => {
@@ -339,7 +382,7 @@ export function LiquidGlass({
     <div
       ref={hostRef}
       className={className}
-      style={{ position: "relative", borderRadius: cornerRadius, ...style }}
+      style={{ position: "relative", ...shadowCorners, borderRadius: cornerRadius, ...style }}
     >
       {ready && (
         <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
@@ -419,7 +462,7 @@ export function LiquidGlass({
           style={{
             position: "absolute",
             inset: 0,
-            borderRadius: "inherit",
+            ...shadowCorners,
             pointerEvents: "none",
             boxShadow: [
               `0 ${(elevation * 0.45).toFixed(1)}px ${(elevation * 1.15).toFixed(1)}px ${(
@@ -444,7 +487,7 @@ export function LiquidGlass({
         }}
       />
 
-      {/* frost + tint + bevel shading */}
+      {/* frost + tint */}
       <div
         aria-hidden="true"
         className={layerClassName}
@@ -453,6 +496,18 @@ export function LiquidGlass({
           background: tint,
           backdropFilter: `blur(${frost}px) saturate(1.55)`,
           WebkitBackdropFilter: `blur(${frost}px) saturate(1.55)`,
+        }}
+      />
+
+      {/* bevel shading. An inset shadow is shaped by the radius rather than
+          clipped by it, so this layer keeps one even in the fallback — there it
+          curves with a circular corner instead of running into the raw box. */}
+      <div
+        aria-hidden="true"
+        className={layerClassName}
+        style={{
+          ...layer,
+          ...shadowCorners,
           boxShadow: [
             `inset ${(dirX * bevel).toFixed(2)}px ${(dirY * bevel).toFixed(2)}px ${(
               bevel * 1.15

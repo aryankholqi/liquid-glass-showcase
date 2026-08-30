@@ -98,7 +98,7 @@ export const PROP_ROWS: {
     name: "cornerSmoothing",
     type: "number",
     def: "60",
-    desc: "Continuity of the corner curve. 0 is a plain circular arc, 100 a full squircle — one superellipse drives the silhouette, the rim stroke and the displacement map together.",
+    desc: "Continuity of the corner curve. 0 is a plain circular arc, 100 the squircle Apple draws — the same superellipse drives the silhouette, the rim stroke, the displacement map and the browser's own corner-shape.",
   },
   {
     name: "refraction",
