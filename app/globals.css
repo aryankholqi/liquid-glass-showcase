@@ -507,7 +507,9 @@ input[type="range"] { accent-color: var(--color-accent); }
   .pg-stage > .stage-center { padding: 0 18px 44px; }
   .pg-canvas { min-width: 620px; min-height: 560px; }
   .pg-card { width: 100%; }
-  .pg-bgbar { left: 12px; right: 12px; bottom: 10px; max-width: none; }
+  /* Anchored on one edge only, so the pill shrinks to its chips instead of
+     stretching the width of the panel. */
+  .pg-bgbar { left: 12px; bottom: 10px; max-width: calc(100% - 24px); }
   .stage-note.right { display: none; }
   .pg-head .reset-btn { align-self: stretch; }
   .code-pane { padding: 18px 14px; font-size: 11.5px; }

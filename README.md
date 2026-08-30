@@ -63,17 +63,17 @@ All standard `div` props are supported, plus:
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `tint` | `string` | `"rgba(17, 21, 27, 0.8)"` | Fill color layered over the refracted backdrop. Any CSS color. |
-| `cornerRadius` | `number` | `0` | Corner radius in pixels. |
-| `cornerSmoothing` | `number` | `60` | Continuity of the corner curve. `0` is a plain circular arc, `100` the squircle Apple draws — identical to CSS `corner-shape: squircle`. |
+| `cornerRadius` | `number` | `48` | Corner radius in pixels. |
+| `cornerSmoothing` | `number` | `32` | Continuity of the corner curve. `0` is a plain circular arc, `100` the squircle Apple draws — identical to CSS `corner-shape: squircle`. |
 | `refraction` | `number` | `100` | How strongly the backdrop bends at the edges (0–100). |
-| `depth` | `number` | `60` | Thickness of the refracting edge band — the perceived glass depth (0–100). |
-| `dispersion` | `number` | `70` | Chromatic aberration: how far the red and blue channels split (0–100). |
-| `frost` | `number` | `7` | Backdrop blur in pixels. |
-| `splay` | `number` | `30` | How far the bend spreads inward from the rim. `0` is a crisp lens, `100` a wide swell. |
-| `lightAngle` | `number` | `-35` | Direction the specular highlight comes from, in degrees. |
-| `lightIntensity` | `number` | `50` | Strength of the specular ring and the rim stroke (0–100). |
+| `depth` | `number` | `85` | Thickness of the refracting edge band — the perceived glass depth (0–100). |
+| `dispersion` | `number` | `100` | Chromatic aberration: how far the red and blue channels split (0–100). |
+| `frost` | `number` | `3` | Backdrop blur in pixels. |
+| `splay` | `number` | `38` | How far the bend spreads inward from the rim. `0` is a crisp lens, `100` a wide swell. |
+| `lightAngle` | `number` | `45` | Direction the specular highlight comes from, in degrees. |
+| `lightIntensity` | `number` | `38` | Strength of the specular ring and the rim stroke (0–100). |
 | `borderWidth` | `number` | `1` | Width of the inside rim stroke. Use `0` to drop the stroke layer and draw your own border. |
-| `elevation` | `number` | `20` | Height of the drop shadow cast behind the panel (0–100). `0` removes it. |
+| `elevation` | `number` | `22` | Height of the drop shadow cast behind the panel (0–100). `0` removes it. |
 | `layerClassName` | `string` | — | Applied to each effect layer instead of the container — use it to mask the glass. |
 
 > **Tuning the edge:** `depth` and `splay` are the two that decide whether the panel reads as glass or as a fisheye. Keep `depth` around 45–65 so the centre stays flat and the bend is confined to a rim, and keep `splay` low (0–35) so the compression concentrates in the last few pixels the way Apple's does. Pushing `depth` to 100 turns the whole panel into one lens.
