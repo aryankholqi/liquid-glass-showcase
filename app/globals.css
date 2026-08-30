@@ -284,7 +284,102 @@ input[type="range"] { accent-color: var(--color-accent); }
    tabs never leaves the panel part empty. */
 .panel-body { --pg-h: 470px; position: relative; display: flex; flex-direction: column; min-height: var(--pg-h); }
 .pg-stage { position: relative; flex: 1 1 auto; height: var(--pg-h); overflow: hidden; }
+
+/* The backdrop scrolls, the panel does not. The scroller holds a canvas wider
+   and taller than the stage; the panel lives in a sibling overlay pinned to the
+   stage centre, so dragging slides content under a rim that never moves. */
+.pg-scroll {
+  position: absolute; inset: 0; overflow: auto;
+  cursor: grab; scrollbar-width: none; -ms-overflow-style: none;
+  /* The artwork is decorative — a drag should pan it, not select it. */
+  user-select: none; -webkit-user-select: none;
+}
+.pg-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.pg-scroll[data-drag="true"] { cursor: grabbing; }
+.pg-canvas {
+  position: relative; overflow: hidden;
+  width: 148%; min-width: 780px;
+  height: 138%; min-height: 620px;
+}
+/* Pointer-transparent so a drag started over the panel still pans the backdrop. */
+.pg-stage > .stage-center { z-index: 2; pointer-events: none; }
+.pg-stage > .stage-note { z-index: 3; }
 .pg-card { width: 392px; }
+
+/* --- backdrop presets --- */
+.pg-canvas[data-bg="aurora"] { background: linear-gradient(160deg, #171b31, #0d0f1c 55%, #12162a); }
+.pg-canvas .blob { position: absolute; display: block; }
+.pg-canvas .b1 { top: -10%; left: -8%; width: 56%; height: 66%; background: radial-gradient(closest-side, #7a6ae2, transparent 70%); opacity: 0.9; animation: lgdrift 20s ease-in-out infinite; }
+.pg-canvas .b2 { bottom: -12%; right: -8%; width: 58%; height: 68%; background: radial-gradient(closest-side, #2b86b4, transparent 70%); opacity: 0.8; animation: lgdrift2 26s ease-in-out infinite; }
+.pg-canvas .b3 { top: 38%; left: 28%; width: 48%; height: 54%; background: radial-gradient(closest-side, #c95a8f, transparent 70%); opacity: 0.55; animation: lgdrift 31s ease-in-out infinite; }
+
+.pg-canvas[data-bg="mesh"] {
+  background:
+    radial-gradient(38% 44% at 16% 20%, #ff7a45 0%, transparent 62%),
+    radial-gradient(34% 40% at 74% 14%, #ffce54 0%, transparent 60%),
+    radial-gradient(44% 48% at 86% 76%, #2f6df6 0%, transparent 64%),
+    radial-gradient(40% 44% at 24% 84%, #12c39c 0%, transparent 62%),
+    radial-gradient(32% 36% at 52% 50%, #b14bff 0%, transparent 58%),
+    #101425;
+}
+
+/* Straight, evenly spaced lines are the clearest read on refraction — the bend
+   at the rim and the channel split are both unmistakable. */
+.pg-canvas[data-bg="grid"] {
+  background:
+    linear-gradient(rgba(126, 166, 255, 0.4) 1px, transparent 1px) 0 0 / 100% 56px,
+    linear-gradient(90deg, rgba(126, 166, 255, 0.4) 1px, transparent 1px) 0 0 / 56px 100%,
+    linear-gradient(rgba(126, 166, 255, 0.13) 1px, transparent 1px) 0 0 / 100% 14px,
+    linear-gradient(90deg, rgba(126, 166, 255, 0.13) 1px, transparent 1px) 0 0 / 14px 100%,
+    radial-gradient(66% 66% at 46% 38%, #1d2f6b, #070a16 100%);
+}
+.pg-canvas .grid-mark { position: absolute; display: block; border-radius: 50%; border: 1px solid rgba(150, 190, 255, 0.5); }
+.pg-canvas .m1 { top: 7%; left: 10%; width: 210px; height: 210px; }
+.pg-canvas .m2 { bottom: 8%; right: 12%; width: 320px; height: 320px; border-style: dashed; opacity: 0.5; }
+.pg-canvas .m3 { top: 44%; left: 50%; width: 150px; height: 150px; border: 0; background: radial-gradient(closest-side, rgba(130, 175, 255, 0.4), transparent); }
+
+.pg-canvas[data-bg="type"] { background: linear-gradient(165deg, #0b0d18, #1a1236 58%, #2b1042); }
+.bg-type {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  justify-content: center; gap: 4px; padding: 20px 0;
+}
+.bg-type span {
+  display: block; white-space: nowrap;
+  font-family: var(--font-heading); font-weight: 500; font-size: 62px; line-height: 0.98;
+  letter-spacing: -0.035em;
+  background: linear-gradient(92deg, #ffffff, #9a8cff 52%, #ff6fae);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0.88;
+}
+
+/* A light ground, to check the rim and the shadow against the opposite value. */
+.pg-canvas[data-bg="paper"] {
+  background:
+    repeating-linear-gradient(135deg, rgba(24, 27, 48, 0.05) 0 2px, transparent 2px 13px),
+    linear-gradient(rgba(24, 27, 48, 0.11) 1px, transparent 1px) 0 0 / 100% 44px,
+    linear-gradient(90deg, rgba(24, 27, 48, 0.11) 1px, transparent 1px) 0 0 / 44px 100%,
+    radial-gradient(72% 72% at 28% 18%, #f4f5fb, #d9ddec 58%, #b4bbd6 100%);
+}
+
+/* --- backdrop switcher --- */
+.pg-bgbar {
+  position: absolute; z-index: 3; left: 14px; bottom: 12px;
+  display: flex; gap: 4px; padding: 4px;
+  max-width: calc(100% - 28px); overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+  background: rgba(9, 11, 20, 0.55);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+.pg-bgbar::-webkit-scrollbar { width: 0; height: 0; }
+.bg-chip {
+  flex: none; padding: 6px 12px; border: none; border-radius: 999px;
+  background: transparent; color: rgba(255, 255, 255, 0.62);
+  font-size: 11.5px; line-height: 1.2; cursor: pointer; transition: 0.16s;
+}
+.bg-chip:hover { color: #fff; }
+.bg-chip[data-on="true"] { background: rgba(255, 255, 255, 0.92); color: #14162a; font-weight: 500; }
 .pg-card-inner { padding: 26px; }
 .pg-card-inner h3 { font-size: 17px; margin: 0; color: #fff; }
 .pg-card-inner p { font-size: 13.5px; line-height: 1.6; color: rgba(255, 255, 255, 0.78); margin: 0 0 18px; }
@@ -406,10 +501,14 @@ input[type="range"] { accent-color: var(--color-accent); }
   .stage { display: grid; align-items: center; justify-items: stretch; height: auto; min-height: 300px; padding: 26px 0; }
   .hero-card { position: static; width: auto; margin: 0; padding: 0 18px; }
   .hero-card > div { width: 100%; }
-  .panel-body { --pg-h: 380px; }
-  .pg-stage { display: grid; align-content: center; height: auto; padding: 32px 0; }
-  .stage-center { position: static; padding: 0 18px; }
+  /* The stage keeps its fixed height here — the backdrop needs a viewport to
+     scroll inside — and only the panel stretches to the width. */
+  .panel-body { --pg-h: 430px; }
+  .pg-stage > .stage-center { padding: 0 18px 44px; }
+  .pg-canvas { min-width: 620px; min-height: 560px; }
   .pg-card { width: 100%; }
+  .pg-bgbar { left: 12px; right: 12px; bottom: 10px; max-width: none; }
+  .stage-note.right { display: none; }
   .pg-head .reset-btn { align-self: stretch; }
   .code-pane { padding: 18px 14px; font-size: 11.5px; }
   .footer-inner { flex-direction: column; gap: 14px; align-items: flex-start; }

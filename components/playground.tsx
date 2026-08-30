@@ -1,19 +1,101 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LiquidGlass } from "@/components/liquid-glass";
 import { CodeBlock } from "@/components/code-block";
 import { CopyButton } from "@/components/copy-button";
-import { PLAYGROUND_DEFAULTS, SLIDERS, TINTS, buildJsx, type GlassConfig } from "@/lib/props";
+import {
+  BACKDROPS,
+  BACKDROP_WORDS,
+  PLAYGROUND_DEFAULTS,
+  SLIDERS,
+  TINTS,
+  buildJsx,
+  type BackdropId,
+  type GlassConfig,
+} from "@/lib/props";
+
+/** The scrollable surface behind the panel. Every preset is CSS — the elements
+ *  here are only the pieces a gradient cannot draw. */
+function BackdropCanvas({ id }: { id: BackdropId }) {
+  return (
+    <div className="pg-canvas" data-bg={id} aria-hidden="true">
+      {id === "aurora" && (
+        <>
+          <span className="blob b1" />
+          <span className="blob b2" />
+          <span className="blob b3" />
+        </>
+      )}
+      {id === "grid" && (
+        <>
+          <span className="grid-mark m1" />
+          <span className="grid-mark m2" />
+          <span className="grid-mark m3" />
+        </>
+      )}
+      {id === "type" && (
+        <div className="bg-type">
+          {BACKDROP_WORDS.map((word, i) => (
+            <span key={word} style={{ marginLeft: `${(i % 3) * 7 - 7}%` }}>
+              {word} {word}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Playground() {
   const [config, setConfig] = useState<GlassConfig>(PLAYGROUND_DEFAULTS);
   const [tab, setTab] = useState<"preview" | "code">("preview");
+  const [backdrop, setBackdrop] = useState<BackdropId>("aurora");
+  const [dragging, setDragging] = useState(false);
 
   const { layerClassName, ...glassProps } = config;
   const named = TINTS.find((t) => t.value === config.tint);
+  const active = BACKDROPS.find((b) => b.id === backdrop) ?? BACKDROPS[0];
   const jsx = buildJsx(config);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const origin = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+
+  /* The canvas overflows the stage on both axes, so park it in the middle on
+     mount — the panel then sits over the centre of the artwork and there is
+     room to pan in every direction. */
+  const attachScroll = useCallback((el: HTMLDivElement | null) => {
+    scrollRef.current = el;
+    if (!el) return;
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  }, []);
+
+  /* Touch already pans natively, with momentum — only pointer drags need this. */
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el || e.pointerType === "touch" || e.button !== 0) return;
+    origin.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
+    el.setPointerCapture(e.pointerId);
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    const from = origin.current;
+    if (!el || !from) return;
+    el.scrollLeft = from.left - (e.clientX - from.x);
+    el.scrollTop = from.top - (e.clientY - from.y);
+  };
+
+  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!origin.current) return;
+    origin.current = null;
+    if (el?.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    setDragging(false);
+  };
 
   return (
     <>
@@ -128,10 +210,20 @@ export function Playground() {
                   transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
                   className="pg-stage"
                 >
-                  <div className="stage-bg" style={{ background: "linear-gradient(160deg,#141728,#0d0f1c)" }} />
-                  <span className="g1" style={{ position: "absolute", top: "-25%", left: "-8%", width: "65%", height: "100%", background: "radial-gradient(closest-side,#7a6ae2,transparent 70%)", opacity: 0.9, animation: "lgdrift 20s ease-in-out infinite" }} />
-                  <span className="g2" style={{ position: "absolute", bottom: "-30%", right: "-8%", width: "70%", height: "100%", background: "radial-gradient(closest-side,#2b86b4,transparent 70%)", opacity: 0.8, animation: "lgdrift2 26s ease-in-out infinite" }} />
-                  <span className="g3" style={{ position: "absolute", top: "34%", left: "-5%", width: "60%", height: "60%", background: "radial-gradient(closest-side,#c95a8f,transparent 70%)", opacity: 0.5, animation: "lgdrift 31s ease-in-out infinite" }} />
+                  <div
+                    ref={attachScroll}
+                    className="pg-scroll"
+                    data-drag={dragging}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                  >
+                    <BackdropCanvas id={backdrop} />
+                  </div>
+
+                  {/* Held dead centre of the stage, outside the scroller, so the
+                      backdrop moves and the glass does not. */}
                   <div className="stage-center">
                     <div className="pg-card">
                       <LiquidGlass {...glassProps} layerClassName={layerClassName || undefined}>
@@ -141,7 +233,7 @@ export function Playground() {
                             <span className="pg-live">live</span>
                           </div>
                           <p>
-                            Drag the sliders and the surface answers immediately — the displacement
+                            Drag the backdrop under the panel and the rim answers — the displacement
                             map is rebuilt from the component&apos;s measured size.
                           </p>
                           <div className="pg-actions">
@@ -152,7 +244,23 @@ export function Playground() {
                       </LiquidGlass>
                     </div>
                   </div>
-                  <div className="stage-note right">backdrop-filter + feDisplacementMap</div>
+
+                  <div className="pg-bgbar" role="group" aria-label="Preview backdrop">
+                    {BACKDROPS.map((b) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        className="bg-chip"
+                        data-on={backdrop === b.id}
+                        aria-pressed={backdrop === b.id}
+                        onClick={() => setBackdrop(b.id)}
+                      >
+                        {b.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="stage-note right">{active.note} · drag to pan</div>
                 </motion.div>
               ) : (
                 <motion.div

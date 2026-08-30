@@ -229,3 +229,30 @@ export const USAGE_SNIPPET = [
   "  )",
   "}",
 ].join("\n");
+
+/**
+ * Preview backdrops for the playground stage. Each one paints a canvas larger
+ * than the stage so the surface can be panned behind a glass panel that never
+ * moves — the rim, the bevel and the dispersion all read as the content slides
+ * underneath. `note` is shown in the stage caption.
+ */
+export type BackdropId = "aurora" | "mesh" | "grid" | "type" | "paper";
+
+export const BACKDROPS: { id: BackdropId; name: string; note: string }[] = [
+  { id: "aurora", name: "Aurora", note: "soft drifting light" },
+  { id: "mesh", name: "Mesh", note: "saturated colour field" },
+  { id: "grid", name: "Grid", note: "straight lines bend at the rim" },
+  { id: "type", name: "Type", note: "letterforms smear through the bevel" },
+  { id: "paper", name: "Paper", note: "light ground, dark glass" },
+];
+
+/** Rows painted by the "type" backdrop. */
+export const BACKDROP_WORDS = [
+  "LIQUID",
+  "REFRACT",
+  "GLASS",
+  "DISPERSE",
+  "BEVEL",
+  "SPLAY",
+  "FROST",
+];
