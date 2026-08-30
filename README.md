@@ -40,7 +40,7 @@ Existing files are never overwritten silently — pass `--overwrite` when you wa
 
 ## The component
 
-`<LiquidGlass>` wraps any content in a real refracting glass surface. The panel's outline is a superellipse — the continuous-curvature squircle Apple uses — and one shape definition drives everything: the silhouette, the rim stroke, and the displacement map.
+`<LiquidGlass>` wraps any content in a real refracting glass surface. The panel's outline is a superellipse — the continuous-curvature squircle Apple uses — and one shape definition drives everything: the silhouette, the rim stroke, the displacement map, and the browser's own `corner-shape`.
 
 The map is rasterized per pixel from the shape's signed distance field, so every point in the edge band stores the *outward normal* of the outline scaled by how hard a ray bends there. That means the backdrop is pulled around the corners along the true surface direction rather than along the x and y axes. The bend itself follows a bevel modelled as a quarter-round of glass: Snell's law over the tilt gives a deviation that climbs steeply through the last few pixels before the rim, which is what reads as liquid. Each color channel is displaced by a slightly different amount for chromatic dispersion, and a frosted tint, a conic specular ring, and a crisp rim stroke sit on top. Everything is rebuilt through a `ResizeObserver`, so the effect stays correct at any size.
 
@@ -83,6 +83,12 @@ All standard `div` props are supported, plus:
 ### Browser support
 
 Chromium renders the full effect. Firefox and Safari treat `backdrop-filter: url()` as invalid, so the refraction layer stays inert there and the squircle silhouette, frost, tint, specular ring, and rim stroke carry the look on their own — it degrades gracefully rather than breaking.
+
+The corner is shaped twice over, because a `backdrop-filter` is clipped by its own box rather than by whatever clips the rest of the element:
+
+- **Chromium 139+** ships `corner-shape`, so the component hands the browser `corner-shape: superellipse(k)` for the same *k* `cornerSmoothing` feeds its own geometry. One curve then shapes every layer, its shadows, and its filtered backdrop at once.
+- **Everywhere else** the superellipse is drawn as a path. `clip-path` shapes the layers, and the two filtered layers additionally carry a fill `mask-image` of that same path — the one clip WebKit applies to a backdrop. Without it the frost stays a rectangle and the panel reads square-cornered on Safari and iOS however smooth its outline is.
+- **Shadows** are formed by a radius, never clipped by a path, so the fallback hands them the circular radius whose arc crosses the superellipse's own diagonal point. It hugs the squircle instead of pinching inside it, which keeps the bevel lit all the way into the corner.
 
 ## Author
 

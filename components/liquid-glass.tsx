@@ -206,6 +206,18 @@ function buildDisplacementMap(
   return canvas.toDataURL();
 }
 
+/**
+ * A CSS mask that fills the shape. WebKit clips a backdrop-filter by the mask
+ * but not by clip-path, so this is what carries the squircle through to the
+ * frost on Safari and iOS.
+ */
+function fillMask(w: number, h: number, path: string): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<path d="${path}" fill="#fff"/></svg>`;
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+}
+
 /** A CSS mask that keeps only a band hugging the shape's outline. */
 function outlineMask(w: number, h: number, path: string, width: number, blur: number): string {
   const stroke = (sw: number, opacity: number) =>
@@ -332,15 +344,12 @@ export function LiquidGlass({
     : {};
 
   /**
-   * A backdrop-filter is clipped by the border box and its corners and by
-   * nothing else — clip-path and masks leave it alone. So the squircle has to
-   * reach the refracting layers through border-radius, which is exactly what
-   * corner-shape adds. With it every layer, its shadows and its filtered
-   * backdrop all land on one outline.
+   * A backdrop-filter is clipped by the border box and its corners, and the
+   * squircle reaches it through corner-shape. With that, every layer, its
+   * shadows and its filtered backdrop all land on one outline.
    *
    * Without it, a circular border-radius would cut the squircle's corners off,
-   * so the fallback squares the box and clips with the path instead: the frost
-   * spills to the corners of the box, but nothing is bitten out of the panel.
+   * so the fallback squares the box and clips with the path instead.
    */
   const corners: CSSProperties = nativeCorners
     ? ({
@@ -349,13 +358,42 @@ export function LiquidGlass({
       } as CSSProperties)
     : { borderRadius: shape ? 0 : "inherit", ...clip };
 
+  /**
+   * clip-path never reaches a backdrop in WebKit, so the fallback also masks
+   * the two filtered layers with the filled shape — the one clip Safari and
+   * iOS do apply to a backdrop-filter. Without it the frost stays a rectangle
+   * and the panel reads square-cornered however smooth the outline is.
+   */
+  const backdropCorners: CSSProperties = useMemo(() => {
+    if (nativeCorners || !shape) return {};
+    const mask = fillMask(width, height, shape);
+    return {
+      maskImage: mask,
+      WebkitMaskImage: mask,
+      maskSize: "100% 100%",
+      WebkitMaskSize: "100% 100%",
+      maskRepeat: "no-repeat",
+      WebkitMaskRepeat: "no-repeat",
+    };
+  }, [nativeCorners, shape, width, height]);
+
+  /**
+   * Shadows are shaped by a radius rather than clipped by a path, so the
+   * fallback hands them the circular radius whose corner crosses the
+   * superellipse's own diagonal point. It hugs the squircle instead of
+   * pinching inside it, which is what left a gap in the corners of the bevel.
+   */
+  const shadowRadius = nativeCorners
+    ? cornerRadius
+    : cornerRadius * ((1 - Math.pow(0.5, 1 / exponent)) / (1 - Math.SQRT1_2));
+
   /** Shapes an inset or drop shadow, which a radius forms rather than clips. */
   const shadowCorners: CSSProperties = nativeCorners
     ? ({
         borderRadius: cornerRadius,
         cornerShape: `superellipse(${superness.toFixed(3)})`,
       } as CSSProperties)
-    : { borderRadius: "inherit" };
+    : { borderRadius: shadowRadius };
 
   const layer: CSSProperties = {
     position: "absolute",
@@ -482,6 +520,7 @@ export function LiquidGlass({
         className={layerClassName}
         style={{
           ...layer,
+          ...backdropCorners,
           backdropFilter: ready ? `url(#${filterId})` : undefined,
           WebkitBackdropFilter: ready ? `url(#${filterId})` : undefined,
         }}
@@ -493,6 +532,7 @@ export function LiquidGlass({
         className={layerClassName}
         style={{
           ...layer,
+          ...backdropCorners,
           background: tint,
           backdropFilter: `blur(${frost}px) saturate(1.55)`,
           WebkitBackdropFilter: `blur(${frost}px) saturate(1.55)`,

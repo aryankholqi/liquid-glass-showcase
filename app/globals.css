@@ -280,8 +280,10 @@ input[type="range"] { accent-color: var(--color-accent); }
 }
 .tab[data-on="true"] { color: var(--color-text); }
 .tab-underline { position: absolute; bottom: -1px; left: 0; height: 2px; width: 80px; background: var(--color-accent); border-radius: 2px; }
-.panel-body { position: relative; min-height: 470px; }
-.pg-stage { position: relative; height: 470px; overflow: hidden; }
+/* One height drives both panes, and each pane stretches to it, so switching
+   tabs never leaves the panel part empty. */
+.panel-body { --pg-h: 470px; position: relative; display: flex; flex-direction: column; min-height: var(--pg-h); }
+.pg-stage { position: relative; flex: 1 1 auto; height: var(--pg-h); overflow: hidden; }
 .pg-card { width: 392px; }
 .pg-card-inner { padding: 26px; }
 .pg-card-inner h3 { font-size: 17px; margin: 0; color: #fff; }
@@ -292,7 +294,7 @@ input[type="range"] { accent-color: var(--color-accent); }
 .pg-actions .primary { background: rgba(255, 255, 255, 0.9); color: #14162a; font-weight: 500; }
 .pg-actions .ghost { background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; }
 
-.code-pane { min-height: 470px; padding: 22px 24px; background: var(--color-bg); overflow: auto; }
+.code-pane { flex: 1 1 auto; min-height: var(--pg-h); padding: 22px 24px; background: var(--color-bg); overflow: auto; }
 .code-pane pre, .code-block { margin: 0; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.85; }
 .code-line { display: flex; gap: 18px; }
 .code-num { flex: none; width: 18px; text-align: right; color: var(--color-neutral-800); user-select: none; }
@@ -380,7 +382,7 @@ input[type="range"] { accent-color: var(--color-accent); }
   .hero h1 { font-size: 44px; }
   .stage { height: 340px; }
   .nav-hide { display: none; }
-  .pg-stage { height: 400px; }
+  .panel-body { --pg-h: 400px; }
   .pg-head { flex-direction: column; align-items: flex-start; }
 }
 
@@ -404,7 +406,8 @@ input[type="range"] { accent-color: var(--color-accent); }
   .stage { display: grid; align-items: center; justify-items: stretch; height: auto; min-height: 300px; padding: 26px 0; }
   .hero-card { position: static; width: auto; margin: 0; padding: 0 18px; }
   .hero-card > div { width: 100%; }
-  .pg-stage { height: auto; min-height: 380px; padding: 32px 0; }
+  .panel-body { --pg-h: 380px; }
+  .pg-stage { display: grid; align-content: center; height: auto; padding: 32px 0; }
   .stage-center { position: static; padding: 0 18px; }
   .pg-card { width: 100%; }
   .pg-head .reset-btn { align-self: stretch; }
