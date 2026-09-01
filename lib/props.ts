@@ -79,6 +79,31 @@ export const TINTS: { name: string; value: string }[] = [
   { name: "Slate", value: "rgba(117, 121, 140, 0.32)" },
 ];
 
+/** `#RGB`, `#RRGGBB` or `#RRGGBBAA`, case-insensitive. */
+export const isHexColor = (v: string): boolean =>
+  /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v);
+
+/** Force a leading `#`, drop anything that is not a hex digit, clamp to 8
+ *  digits and lowercase — what the custom-tint field accepts as it is typed. */
+export const normalizeHex = (raw: string): string =>
+  "#" + raw.replace(/[^0-9a-f]/gi, "").slice(0, 8).toLowerCase();
+
+/** Best-effort CSS colour → hex, so a preset `rgba(...)` tint can be shown in
+ *  the custom field. Hex passes through; `rgb()/rgba()` becomes `#rrggbb` plus
+ *  an alpha byte when it is not fully opaque; anything else is returned as-is. */
+export const colorToHex = (color: string): string => {
+  const v = color.trim();
+  if (isHexColor(v)) return v.toLowerCase();
+  const m = v.match(
+    /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$/i,
+  );
+  if (!m) return v;
+  const byte = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  const a = m[4] === undefined ? 1 : Number(m[4]);
+  return "#" + byte(+m[1]) + byte(+m[2]) + byte(+m[3]) + (a < 1 ? byte(a * 255) : "");
+};
+
 export const INSTALL_COMMAND = "npx liquid-glass-cli add liquid-glass";
 
 export const PROP_ROWS: {

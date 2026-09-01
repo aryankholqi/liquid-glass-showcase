@@ -12,6 +12,9 @@ import {
   SLIDERS,
   TINTS,
   buildJsx,
+  colorToHex,
+  isHexColor,
+  normalizeHex,
   type BackdropId,
   type GlassConfig,
 } from "@/lib/props";
@@ -53,6 +56,7 @@ export function Playground() {
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const [backdrop, setBackdrop] = useState<BackdropId>("aurora");
   const [dragging, setDragging] = useState(false);
+  const [customTint, setCustomTint] = useState(() => colorToHex(PLAYGROUND_DEFAULTS.tint));
 
   const { layerClassName, ...glassProps } = config;
   const named = TINTS.find((t) => t.value === config.tint);
@@ -107,7 +111,14 @@ export function Playground() {
             matching JSX.
           </p>
         </div>
-        <button type="button" className="reset-btn" onClick={() => setConfig(PLAYGROUND_DEFAULTS)}>
+        <button
+          type="button"
+          className="reset-btn"
+          onClick={() => {
+            setConfig(PLAYGROUND_DEFAULTS);
+            setCustomTint(colorToHex(PLAYGROUND_DEFAULTS.tint));
+          }}
+        >
           Reset to defaults
         </button>
       </div>
@@ -131,9 +142,37 @@ export function Playground() {
                   aria-label={t.name}
                   data-on={config.tint === t.value}
                   style={{ background: `linear-gradient(${t.value}, ${t.value}), #0d0f1c` }}
-                  onClick={() => setConfig((c) => ({ ...c, tint: t.value }))}
+                  onClick={() => {
+                    setConfig((c) => ({ ...c, tint: t.value }));
+                    setCustomTint(colorToHex(t.value));
+                  }}
                 />
               ))}
+            </div>
+
+            {/* Custom hex tint. The field keeps a leading "#" and only accepts
+                hex digits; the swatch on the left previews the colour and the
+                glass updates as soon as the value is a valid #RGB/#RRGGBB(AA). */}
+            <div className="tint-custom" data-valid={isHexColor(customTint)}>
+              <span
+                className="tint-preview"
+                style={{ background: isHexColor(customTint) ? customTint : "transparent" }}
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                className="tint-hex"
+                value={customTint}
+                spellCheck={false}
+                autoComplete="off"
+                aria-label="Custom hex tint"
+                placeholder="#7c6cff"
+                onChange={(e) => {
+                  const next = normalizeHex(e.target.value);
+                  setCustomTint(next);
+                  if (isHexColor(next)) setConfig((c) => ({ ...c, tint: next }));
+                }}
+              />
             </div>
           </div>
 
