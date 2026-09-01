@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LiquidGlass } from "@/components/liquid-glass";
+import { TailwindJit } from "@/components/tailwind-jit";
 import { CodeBlock } from "@/components/code-block";
 import { CopyButton } from "@/components/copy-button";
 import {
@@ -103,6 +104,7 @@ export function Playground() {
 
   return (
     <>
+      <TailwindJit />
       <div className="pg-head">
         <div>
           <h2>Playground</h2>
@@ -204,13 +206,13 @@ export function Playground() {
             <input
               id="prop-layer"
               type="text"
-              placeholder="e.g. mask-radial"
+              placeholder="e.g. opacity-70 blur-sm mix-blend-overlay"
               value={config.layerClassName}
               onChange={(e) => setConfig((c) => ({ ...c, layerClassName: e.target.value }))}
             />
             <p>
-              Passed through to each effect layer. Utility classes have no effect in this preview,
-              but they appear in the generated code.
+              Passed through to each effect layer. Tailwind utility classes are compiled in the
+              browser, so whatever you type applies live in the preview and in the generated code.
             </p>
           </div>
         </aside>
