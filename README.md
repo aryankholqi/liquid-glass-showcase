@@ -63,6 +63,7 @@ All standard `div` props are supported, plus:
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `tint` | `string` | `"rgba(17, 21, 27, 0.8)"` | Fill color layered over the refracted backdrop. Any CSS color. |
+| `opacity` | `number` | `100` | Opacity of the tint alone (0–100). Scales the color's own alpha; frost and refraction are unaffected. |
 | `cornerRadius` | `number` | `48` | Corner radius in pixels. |
 | `cornerSmoothing` | `number` | `32` | Continuity of the corner curve. `0` is a plain circular arc, `100` the squircle Apple draws — identical to CSS `corner-shape: squircle`. |
 | `refraction` | `number` | `100` | How strongly the backdrop bends at the edges (0–100). |

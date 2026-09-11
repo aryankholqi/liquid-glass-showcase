@@ -14,6 +14,11 @@ export interface LiquidGlassProps {
   children?: ReactNode;
   /** Fill layered on top of the refracted backdrop. Any CSS colour. */
   tint?: string;
+  /**
+   * Opacity of the tint alone, 0–100. Scales the colour's own alpha, so the
+   * frost and refraction underneath are left untouched.
+   */
+  opacity?: number;
   /** Corner radius in pixels. */
   cornerRadius?: number;
   /**
@@ -266,6 +271,7 @@ function specularRing(angle: number, peak: number): string {
 export function LiquidGlass({
   children,
   tint = "rgba(17, 21, 27, 0.8)",
+  opacity = 100,
   cornerRadius = 48,
   cornerSmoothing = 32,
   refraction = 100,
@@ -338,6 +344,17 @@ export function LiquidGlass({
   const dirY = Math.sin(radians);
   const light = clamp01(lightIntensity / 100);
   const bevel = Math.max(1, band * 0.42);
+
+  /**
+   * Mixing toward transparent scales the tint's alpha whatever form the colour
+   * takes — hex, rgb, oklch or a CSS variable. CSS `opacity` on the layer would
+   * fade the frost with it, and would also fight an opacity in layerClassName.
+   */
+  const tintAlpha = clamp01(opacity / 100);
+  const tintFill =
+    tintAlpha >= 1
+      ? tint
+      : `color-mix(in srgb, ${tint} ${(tintAlpha * 100).toFixed(1)}%, transparent)`;
 
   const clip: CSSProperties = shape
     ? { clipPath: `path("${shape}")`, WebkitClipPath: `path("${shape}")` }
@@ -533,7 +550,7 @@ export function LiquidGlass({
         style={{
           ...layer,
           ...backdropCorners,
-          background: tint,
+          background: tintFill,
           backdropFilter: `blur(${frost}px) saturate(1.55)`,
           WebkitBackdropFilter: `blur(${frost}px) saturate(1.55)`,
         }}

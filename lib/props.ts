@@ -4,6 +4,7 @@ export type GlassConfig = Required<
   Pick<
     LiquidGlassProps,
     | "tint"
+    | "opacity"
     | "cornerRadius"
     | "cornerSmoothing"
     | "refraction"
@@ -21,6 +22,7 @@ export type GlassConfig = Required<
 /** Playground starting point. */
 export const PLAYGROUND_DEFAULTS: GlassConfig = {
   tint: "rgba(145, 132, 217, 0.18)",
+  opacity: 100,
   cornerRadius: 48,
   cornerSmoothing: 32,
   refraction: 100,
@@ -37,6 +39,7 @@ export const PLAYGROUND_DEFAULTS: GlassConfig = {
 
 export const HERO_CONFIG: GlassConfig = {
   tint: "rgba(145, 132, 217, 0.18)",
+  opacity: 100,
   cornerRadius: 32,
   cornerSmoothing: 100,
   refraction: 100,
@@ -60,6 +63,7 @@ export type SliderSpec = {
 };
 
 export const SLIDERS: SliderSpec[] = [
+  { key: "opacity", min: 0, max: 100, step: 1, unit: "%" },
   { key: "cornerRadius", min: 0, max: 64, step: 1, unit: "px" },
   { key: "cornerSmoothing", min: 0, max: 100, step: 1, unit: "" },
   { key: "refraction", min: 0, max: 100, step: 1, unit: "" },
@@ -117,6 +121,12 @@ export const PROP_ROWS: {
     type: "string",
     def: "rgba(17, 21, 27, 0.8)",
     desc: "Fill layered on top of the refracted backdrop. Any CSS colour — hex, rgb, hsl, oklch or a CSS variable.",
+  },
+  {
+    name: "opacity",
+    type: "number",
+    def: "100",
+    desc: "Opacity of the tint alone, 0–100. Scales the colour's own alpha, so the frost and refraction underneath stay as they are.",
   },
   { name: "cornerRadius", type: "number", def: "48", desc: "Corner radius in pixels." },
   {
@@ -213,6 +223,7 @@ export function buildJsx(c: GlassConfig): string {
     "  return (",
     "    <LiquidGlass",
     `      tint="${c.tint}"`,
+    `      opacity={${c.opacity}}`,
     `      cornerRadius={${c.cornerRadius}}`,
     `      cornerSmoothing={${c.cornerSmoothing}}`,
     `      refraction={${c.refraction}}`,
