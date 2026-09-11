@@ -6,6 +6,7 @@ import { LiquidGlass } from "@/components/liquid-glass";
 import { TailwindJit } from "@/components/tailwind-jit";
 import { CodeBlock } from "@/components/code-block";
 import { CopyButton } from "@/components/copy-button";
+import { PropSlider } from "@/components/prop-slider";
 import {
   BACKDROPS,
   BACKDROP_WORDS,
@@ -180,24 +181,17 @@ export function Playground() {
 
           <div className="sliders">
             {SLIDERS.map((s) => (
-              <div key={s.key}>
-                <div className="control-label">
-                  <label htmlFor={`prop-${s.key}`}>{s.key}</label>
-                  <span className="control-value">
-                    {config[s.key]}
-                    {s.unit}
-                  </span>
-                </div>
-                <input
-                  id={`prop-${s.key}`}
-                  type="range"
-                  min={s.min}
-                  max={s.max}
-                  step={s.step}
-                  value={config[s.key]}
-                  onChange={(e) => setConfig((c) => ({ ...c, [s.key]: Number(e.target.value) }))}
-                />
-              </div>
+              <PropSlider
+                key={s.key}
+                id={`prop-${s.key}`}
+                label={s.key}
+                value={config[s.key]}
+                min={s.min}
+                max={s.max}
+                step={s.step}
+                unit={s.unit}
+                onChange={(v) => setConfig((c) => ({ ...c, [s.key]: v }))}
+              />
             ))}
           </div>
 

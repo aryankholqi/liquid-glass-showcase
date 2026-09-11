@@ -276,8 +276,51 @@ input[type="range"] { accent-color: var(--color-accent); }
 }
 .tint-hex:focus { outline: none; }
 .tint-hex::placeholder { color: var(--color-neutral-700); }
-.sliders { display: flex; flex-direction: column; gap: 15px; }
-.sliders input[type="range"] { width: 100%; height: 3px; cursor: pointer; }
+.sliders { display: flex; flex-direction: column; gap: 7px; }
+
+/* Label, value, fill and handle share one bar. The handle's centre runs from
+   7px in at min to 7px in at max, and the fill always ends 7px past it — the
+   same geometry PropSlider inverts to turn a pointer into a value. */
+.prop-slider {
+  --p: 0;
+  --handle-x: calc(7px + (100% - 14px) * var(--p));
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  height: 34px; padding: 0 17px; overflow: hidden;
+  border-radius: var(--radius-md); background: var(--color-bg);
+  cursor: ew-resize; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+}
+/* tick marks, drawn under the fill on the same track the handle's centre runs */
+.prop-slider-tick {
+  position: absolute; top: 50%; left: calc(7px + (100% - 14px) * var(--t) - 0.5px); translate: 0 -50%;
+  width: 1px; height: 10px; background: rgb(255 255 255 / 0.07); pointer-events: none;
+}
+.prop-slider-fill {
+  position: absolute; inset: 0 auto 0 0; width: calc(var(--handle-x) + 7px);
+  border-radius: inherit; background: color-mix(in srgb, var(--color-neutral-800) 62%, var(--color-bg));
+  pointer-events: none; transition: background-color 0.15s;
+}
+.prop-slider-handle {
+  position: absolute; top: 50%; left: calc(var(--handle-x) - 1.5px); translate: 0 -50%;
+  width: 3px; height: 16px; border-radius: 2px; background: var(--color-neutral-500);
+  pointer-events: none; transition: background-color 0.15s, box-shadow 0.15s;
+}
+.prop-slider-label,
+.prop-slider-value { position: relative; min-width: 0; pointer-events: none; }
+.prop-slider-label { font-size: 12.5px; color: var(--color-neutral-300); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prop-slider-value { flex: none; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; color: var(--color-neutral-100); }
+.prop-slider-input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; pointer-events: none;
+}
+.prop-slider:hover .prop-slider-fill { background: color-mix(in srgb, var(--color-neutral-800) 80%, var(--color-bg)); }
+.prop-slider:hover .prop-slider-handle { background: var(--color-neutral-300); }
+.prop-slider[data-drag="true"] .prop-slider-handle,
+.prop-slider:has(.prop-slider-input:focus-visible) .prop-slider-handle {
+  background: var(--color-neutral-100); box-shadow: 0 0 8px rgb(255 255 255 / 0.35);
+}
+.prop-slider[data-pointer-focus="false"]:has(.prop-slider-input:focus-visible) {
+  outline: 2px solid var(--color-accent); outline-offset: 2px;
+}
 .layer-field { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-neutral-900); }
 .layer-field label { display: block; font-size: 12.5px; color: var(--color-neutral-300); margin-bottom: 7px; }
 .layer-field input {
@@ -478,7 +521,7 @@ input[type="range"] { accent-color: var(--color-accent); }
   .features { grid-template-columns: repeat(2, 1fr); }
   .pg-grid { grid-template-columns: 1fr; }
   .controls { position: static; }
-  .sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; }
+  .sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; }
 }
 
 @media (max-width: 920px) {
@@ -515,7 +558,7 @@ input[type="range"] { accent-color: var(--color-accent); }
   .cta-row { flex-direction: column; align-items: stretch; }
   .cta-row a { justify-content: center; min-height: 46px; }
   .sliders { grid-template-columns: 1fr; gap: 6px; }
-  .sliders input[type="range"] { height: 26px; padding: 11px 0; margin: -9px 0; box-sizing: content-box; }
+  .prop-slider { height: 42px; }
   .swatch { width: 44px; height: 36px; }
   .stage { display: grid; align-items: center; justify-items: stretch; height: auto; min-height: 300px; padding: 26px 0; }
   .hero-card { position: static; width: auto; margin: 0; padding: 0 18px; }
