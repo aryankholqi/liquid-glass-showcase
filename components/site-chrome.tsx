@@ -19,7 +19,7 @@ export function SiteNav({ current }: { current?: "home" | "docs" }) {
         ) : (
           <>
             <span className="nav-name">liquid-glass-cli</span>
-            <span className="nav-ver">v1.1</span>
+            <span className="nav-ver">v1.2</span>
           </>
         )}
       </div>
