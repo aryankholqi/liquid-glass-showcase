@@ -108,6 +108,39 @@ export const colorToHex = (color: string): string => {
   return "#" + byte(+m[1]) + byte(+m[2]) + byte(+m[3]) + (a < 1 ? byte(a * 255) : "");
 };
 
+/** Hue in degrees (0–360); saturation, value and alpha as 0–1. */
+export type Hsva = { h: number; s: number; v: number; a: number };
+
+/** `#RGB/#RRGGBB(AA)` → HSVA, or `null` when the string is not a hex colour. */
+export const hexToHsva = (hex: string): Hsva | null => {
+  if (!isHexColor(hex)) return null;
+  let d = hex.slice(1);
+  if (d.length === 3) d = d.replace(/./g, "$&$&");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(d.slice(i, i + 2), 16) / 255);
+  const a = d.length === 8 ? parseInt(d.slice(6, 8), 16) / 255 : 1;
+  const max = Math.max(r, g, b);
+  const delta = max - Math.min(r, g, b);
+  let h = 0;
+  if (delta) {
+    if (max === r) h = (g - b) / delta;
+    else if (max === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  return { h, s: max ? delta / max : 0, v: max, a };
+};
+
+/** HSVA → `#rrggbb`, plus an alpha byte when the colour is not fully opaque. */
+export const hsvaToHex = ({ h, s, v, a }: Hsva): string => {
+  const channel = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+  };
+  const byte = (x: number) => Math.round(x * 255).toString(16).padStart(2, "0");
+  const alpha = byte(a);
+  return "#" + byte(channel(5)) + byte(channel(3)) + byte(channel(1)) + (alpha === "ff" ? "" : alpha);
+};
+
 export const INSTALL_COMMAND = "npx liquid-glass-cli add liquid-glass";
 
 export const PROP_ROWS: {

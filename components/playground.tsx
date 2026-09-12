@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LiquidGlass } from "@/components/liquid-glass";
 import { TailwindJit } from "@/components/tailwind-jit";
 import { CodeBlock } from "@/components/code-block";
 import { CopyButton } from "@/components/copy-button";
 import { PropSlider } from "@/components/prop-slider";
+import { TintPalette } from "@/components/tint-palette";
 import {
   BACKDROPS,
   BACKDROP_WORDS,
@@ -59,6 +66,35 @@ export function Playground() {
   const [backdrop, setBackdrop] = useState<BackdropId>("aurora");
   const [dragging, setDragging] = useState(false);
   const [customTint, setCustomTint] = useState(() => colorToHex(PLAYGROUND_DEFAULTS.tint));
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const tintRef = useRef<HTMLDivElement | null>(null);
+  const paletteToggleRef = useRef<HTMLButtonElement | null>(null);
+
+  /* The palette floats over the sliders, so a press anywhere outside the tint
+     block, or Escape, puts it away. */
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!tintRef.current?.contains(e.target as Node)) setPaletteOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setPaletteOpen(false);
+      paletteToggleRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [paletteOpen]);
+
+  /** From the hex field or the palette — the glass only takes a valid hex. */
+  const applyTint = (hex: string) => {
+    setCustomTint(hex);
+    if (isHexColor(hex)) setConfig((c) => ({ ...c, tint: hex }));
+  };
 
   const { layerClassName, ...glassProps } = config;
   const named = TINTS.find((t) => t.value === config.tint);
@@ -130,7 +166,7 @@ export function Playground() {
         <aside className="controls">
           <div className="controls-title">Props</div>
 
-          <div className="tint-block">
+          <div className="tint-block" ref={tintRef}>
             <div className="control-label">
               <label>tint</label>
               <span className="control-value">{named ? named.name : config.tint}</span>
@@ -155,12 +191,14 @@ export function Playground() {
 
             {/* Custom hex tint. The field keeps a leading "#" and only accepts
                 hex digits; the swatch on the left previews the colour and the
-                glass updates as soon as the value is a valid #RGB/#RRGGBB(AA). */}
+                glass updates as soon as the value is a valid #RGB/#RRGGBB(AA).
+                The swatch and the palette button both open the spectrum picker. */}
             <div className="tint-custom" data-valid={isHexColor(customTint)}>
               <span
                 className="tint-preview"
                 style={{ background: isHexColor(customTint) ? customTint : "transparent" }}
                 aria-hidden="true"
+                onClick={() => setPaletteOpen((o) => !o)}
               />
               <input
                 type="text"
@@ -170,13 +208,47 @@ export function Playground() {
                 autoComplete="off"
                 aria-label="Custom hex tint"
                 placeholder="#7c6cff"
-                onChange={(e) => {
-                  const next = normalizeHex(e.target.value);
-                  setCustomTint(next);
-                  if (isHexColor(next)) setConfig((c) => ({ ...c, tint: next }));
-                }}
+                onChange={(e) => applyTint(normalizeHex(e.target.value))}
               />
+              <button
+                ref={paletteToggleRef}
+                type="button"
+                className="tint-palette-toggle"
+                title="Colour palette"
+                aria-label="Colour palette"
+                aria-expanded={paletteOpen}
+                aria-controls="tint-palette"
+                data-on={paletteOpen}
+                onClick={() => setPaletteOpen((o) => !o)}
+              >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M8 1.75a6.25 6.25 0 0 0 0 12.5c.85 0 1.35-.55 1.35-1.25 0-.85-.75-1.15-.75-1.95 0-.7.55-1.2 1.25-1.2h1.65a3.25 3.25 0 0 0 3.25-3.25C14.75 3.85 11.8 1.75 8 1.75Z"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="4.75" cy="7.5" r="1" fill="currentColor" />
+                  <circle cx="6.75" cy="4.6" r="1" fill="currentColor" />
+                  <circle cx="10.1" cy="4.6" r="1" fill="currentColor" />
+                </svg>
+              </button>
             </div>
+
+            <AnimatePresence>
+              {paletteOpen && (
+                <motion.div
+                  id="tint-palette"
+                  className="tint-popover"
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <TintPalette value={customTint} onChange={applyTint} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="sliders">
