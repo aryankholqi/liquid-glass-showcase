@@ -468,8 +468,9 @@ input[type="range"] { accent-color: var(--color-accent); }
     radial-gradient(72% 72% at 28% 18%, #f4f5fb, #d9ddec 58%, #b4bbd6 100%);
 }
 
-/* --- backdrop switcher --- */
-.pg-bgbar {
+/* --- backdrop and preset switchers --- */
+.pg-bgbar,
+.pg-presetbar {
   position: absolute; z-index: 3; left: 14px; bottom: 12px;
   display: flex; gap: 4px; padding: 4px;
   max-width: calc(100% - 28px); overflow-x: auto;
@@ -479,7 +480,8 @@ input[type="range"] { accent-color: var(--color-accent); }
   backdrop-filter: blur(14px) saturate(1.4);
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
 }
-.pg-bgbar::-webkit-scrollbar { width: 0; height: 0; }
+.pg-bgbar::-webkit-scrollbar,
+.pg-presetbar::-webkit-scrollbar { width: 0; height: 0; }
 .bg-chip {
   flex: none; padding: 6px 12px; border: none; border-radius: 999px;
   background: transparent; color: rgba(255, 255, 255, 0.62);
@@ -495,6 +497,51 @@ input[type="range"] { accent-color: var(--color-accent); }
 .pg-actions i { font-style: normal; padding: 8px 15px; border-radius: 9px; font-size: 12.5px; }
 .pg-actions .primary { background: rgba(255, 255, 255, 0.9); color: #14162a; font-weight: 500; }
 .pg-actions .ghost { background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; }
+
+/* --- element presets --- */
+/* The backdrop switcher's twin, centred on the top edge of the stage. */
+.pg-presetbar { top: 12px; bottom: auto; left: 50%; translate: -50% 0; }
+
+.pg-card[data-preset="button"] { width: auto; }
+.pg-card[data-preset="navbar"] { width: 520px; }
+.pg-card[data-preset="notification"] { width: 360px; }
+.pg-card[data-preset="player"] { width: 300px; }
+
+.pv-button {
+  display: flex; align-items: center; gap: 8px; padding: 14px 24px 14px 26px;
+  font-size: 14px; font-weight: 500; line-height: 1.2; color: #fff; white-space: nowrap;
+}
+
+.pv-nav { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 8px 8px 8px 20px; font-size: 13px; color: #fff; }
+.pv-nav-brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.pv-nav-logo { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #a78bfa, #38bdf8); }
+.pv-nav-links { display: flex; gap: 20px; }
+.pv-nav-links i { font-style: normal; color: rgba(255, 255, 255, 0.68); }
+.pv-nav-links i[data-on="true"] { color: #fff; }
+.pv-nav-cta { font-style: normal; padding: 8px 16px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #14162a; font-weight: 500; }
+
+.pv-note { display: flex; align-items: flex-start; gap: 12px; padding: 14px; color: #fff; }
+.pv-note-icon {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px;
+  border-radius: 11px; background: linear-gradient(#5ee077, #22b04b);
+}
+.pv-note-body { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.4; }
+.pv-note-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 1px; }
+.pv-note-head span { font-size: 12.5px; color: rgba(255, 255, 255, 0.6); }
+.pv-note-body p { margin: 0; color: rgba(255, 255, 255, 0.82); }
+
+.pv-player { padding: 16px; color: #fff; }
+.pv-player-track { display: flex; align-items: center; gap: 12px; }
+.pv-player-art {
+  flex: none; width: 48px; height: 48px; border-radius: 9px;
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.5), transparent 45%), linear-gradient(135deg, #d946ef, #4f46e5);
+}
+.pv-player-meta { display: flex; flex-direction: column; min-width: 0; font-size: 14px; line-height: 1.35; }
+.pv-player-meta b, .pv-player-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-player-meta span { font-size: 12.5px; color: rgba(255, 255, 255, 0.6); }
+.pv-player-progress { height: 4px; margin-top: 16px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); }
+.pv-player-progress span { display: block; width: 40%; height: 100%; border-radius: inherit; background: #fff; }
+.pv-player-controls { display: flex; align-items: center; justify-content: center; gap: 34px; margin-top: 12px; }
 
 .code-pane { flex: 1 1 auto; min-height: var(--pg-h); padding: 22px 24px; background: var(--color-bg); overflow: auto; }
 .code-pane pre, .code-block { margin: 0; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.85; }
@@ -611,9 +658,15 @@ input[type="range"] { accent-color: var(--color-accent); }
   /* The stage keeps its fixed height here — the backdrop needs a viewport to
      scroll inside — and only the panel stretches to the width. */
   .panel-body { --pg-h: 430px; }
-  .pg-stage > .stage-center { padding: 0 18px 44px; }
+  .pg-stage > .stage-center { padding: 44px 18px; }
   .pg-canvas { min-width: 620px; min-height: 560px; }
-  .pg-card { width: 100%; }
+  .pg-card,
+  .pg-card[data-preset] { width: 100%; }
+  .pg-card[data-preset="button"] { width: auto; }
+  .pg-presetbar { gap: 2px; }
+  .pg-presetbar .bg-chip { padding-left: 8px; padding-right: 8px; }
+  .pv-nav { gap: 12px; padding-left: 16px; }
+  .pv-nav-links { gap: 14px; }
   /* Anchored on one edge only, so the pill shrinks to its chips instead of
      stretching the width of the panel. */
   .pg-bgbar { left: 12px; bottom: 10px; max-width: calc(100% - 24px); }
@@ -634,6 +687,7 @@ input[type="range"] { accent-color: var(--color-accent); }
 
 @media (max-width: 420px) {
   .tab { width: 70px; padding-left: 10px; padding-right: 10px; }
+  .pv-nav-links i:not([data-on="true"]) { display: none; }
   .stage-note.right { display: none; }
 }
 

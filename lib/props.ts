@@ -248,13 +248,131 @@ export const RECIPES = [
   },
 ];
 
-export function buildJsx(c: GlassConfig): string {
+/**
+ * What the playground puts under the glass. Each preset carries the geometry
+ * that suits its shape — picking one sets those props and leaves tint, light
+ * and the rest as they were — plus the markup the Code tab wraps in
+ * `<LiquidGlass>`. The preview draws the same element with the showcase's own
+ * CSS, so it renders before the in-browser Tailwind compiler has loaded.
+ */
+export type PresetId = "card" | "button" | "navbar" | "notification" | "player";
+
+export type PresetGeometry = Pick<
+  GlassConfig,
+  "cornerRadius" | "cornerSmoothing" | "depth" | "splay" | "frost" | "elevation"
+>;
+
+export type Preset = {
+  id: PresetId;
+  name: string;
+  /** Function name in the generated snippet. */
+  component: string;
+  config: PresetGeometry;
+  /** `className` on `<LiquidGlass>` in the generated snippet. */
+  className?: string;
+  /** Children of `<LiquidGlass>` in the generated snippet, one line each. */
+  children: string[];
+};
+
+export const PRESETS: Preset[] = [
+  {
+    id: "card",
+    name: "Card",
+    component: "Panel",
+    config: { cornerRadius: 48, cornerSmoothing: 32, depth: 85, splay: 38, frost: 4, elevation: 22 },
+    children: ["<h3>Liquid Glass</h3>", "<p>Own the file, edit the file.</p>"],
+  },
+  {
+    id: "button",
+    name: "Button",
+    component: "GlassButton",
+    config: { cornerRadius: 64, cornerSmoothing: 0, depth: 85, splay: 38, frost: 3, elevation: 16 },
+    className: "inline-block",
+    children: [
+      '<button className="flex items-center gap-2 px-6 py-3.5 text-sm font-medium text-white">',
+      "  Get started",
+      "  <span aria-hidden>→</span>",
+      "</button>",
+    ],
+  },
+  {
+    id: "navbar",
+    name: "Navbar",
+    component: "Navbar",
+    config: { cornerRadius: 64, cornerSmoothing: 0, depth: 85, splay: 38, frost: 4, elevation: 20 },
+    className: "w-full max-w-xl",
+    children: [
+      '<nav className="flex items-center justify-between gap-6 py-2 pl-5 pr-2 text-sm text-white">',
+      '  <a href="/" className="flex items-center gap-2 font-semibold">',
+      '    <span className="size-5 rounded-full bg-gradient-to-br from-violet-400 to-sky-400" />',
+      "    Glass",
+      "  </a>",
+      '  <div className="flex gap-5 text-white/70">',
+      '    <a href="/" className="text-white">Home</a>',
+      '    <a href="/docs">Docs</a>',
+      '    <a href="/pricing">Pricing</a>',
+      "  </div>",
+      '  <a href="/login" className="rounded-full bg-white px-4 py-2 font-medium text-black">',
+      "    Sign in",
+      "  </a>",
+      "</nav>",
+    ],
+  },
+  {
+    id: "notification",
+    name: "Notification",
+    component: "Notification",
+    config: { cornerRadius: 30, cornerSmoothing: 60, depth: 85, splay: 38, frost: 4, elevation: 28 },
+    className: "w-full max-w-sm",
+    children: [
+      '<div className="flex items-start gap-3 p-3.5 text-white">',
+      '  <div className="size-10 shrink-0 rounded-xl bg-gradient-to-b from-emerald-400 to-green-600" />',
+      '  <div className="min-w-0 flex-1 text-sm">',
+      '    <div className="flex justify-between">',
+      '      <strong className="font-semibold">Messages</strong>',
+      '      <span className="text-white/60">now</span>',
+      "    </div>",
+      '    <p className="text-white/80">Sam: The glass build is live — take a look?</p>',
+      "  </div>",
+      "</div>",
+    ],
+  },
+  {
+    id: "player",
+    name: "Player",
+    component: "NowPlaying",
+    config: { cornerRadius: 40, cornerSmoothing: 60, depth: 85, splay: 38, frost: 5, elevation: 30 },
+    className: "w-full max-w-xs",
+    children: [
+      '<div className="p-4 text-white">',
+      '  <div className="flex items-center gap-3">',
+      '    <div className="size-12 rounded-lg bg-gradient-to-br from-fuchsia-500 to-indigo-600" />',
+      '    <div className="min-w-0">',
+      '      <p className="truncate text-sm font-semibold">Refraction</p>',
+      '      <p className="truncate text-xs text-white/60">Glass Arcade</p>',
+      "    </div>",
+      "  </div>",
+      '  <div className="mt-4 h-1 rounded-full bg-white/20">',
+      '    <div className="h-full w-2/5 rounded-full bg-white" />',
+      "  </div>",
+      '  <div className="mt-3 flex justify-center gap-8 text-lg">',
+      '    <button aria-label="Previous">⏮︎</button>',
+      '    <button aria-label="Pause">⏸︎</button>',
+      '    <button aria-label="Next">⏭︎</button>',
+      "  </div>",
+      "</div>",
+    ],
+  },
+];
+
+export function buildJsx(c: GlassConfig, preset: Preset = PRESETS[0]): string {
   return [
     'import { LiquidGlass } from "@/components/liquid-glass"',
     "",
-    "export default function Panel() {",
+    `export default function ${preset.component}() {`,
     "  return (",
     "    <LiquidGlass",
+    ...(preset.className ? [`      className="${preset.className}"`] : []),
     `      tint="${c.tint}"`,
     `      opacity={${c.opacity}}`,
     `      cornerRadius={${c.cornerRadius}}`,
@@ -270,8 +388,7 @@ export function buildJsx(c: GlassConfig): string {
     `      elevation={${c.elevation}}`,
     ...(c.layerClassName ? [`      layerClassName="${c.layerClassName}"`] : []),
     "    >",
-    "      <h3>Liquid Glass</h3>",
-    "      <p>Own the file, edit the file.</p>",
+    ...preset.children.map((line) => `      ${line}`),
     "    </LiquidGlass>",
     "  )",
     "}",

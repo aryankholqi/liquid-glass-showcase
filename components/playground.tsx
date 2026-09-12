@@ -14,10 +14,12 @@ import { CodeBlock } from "@/components/code-block";
 import { CopyButton } from "@/components/copy-button";
 import { PropSlider } from "@/components/prop-slider";
 import { TintPalette } from "@/components/tint-palette";
+import { PresetPreview } from "@/components/preset-preview";
 import {
   BACKDROPS,
   BACKDROP_WORDS,
   PLAYGROUND_DEFAULTS,
+  PRESETS,
   SLIDERS,
   TINTS,
   buildJsx,
@@ -26,6 +28,7 @@ import {
   normalizeHex,
   type BackdropId,
   type GlassConfig,
+  type PresetId,
 } from "@/lib/props";
 
 /** The scrollable surface behind the panel. Every preset is CSS — the elements
@@ -64,6 +67,7 @@ export function Playground() {
   const [config, setConfig] = useState<GlassConfig>(PLAYGROUND_DEFAULTS);
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const [backdrop, setBackdrop] = useState<BackdropId>("aurora");
+  const [presetId, setPresetId] = useState<PresetId>("card");
   const [dragging, setDragging] = useState(false);
   const [customTint, setCustomTint] = useState(() => colorToHex(PLAYGROUND_DEFAULTS.tint));
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -99,7 +103,8 @@ export function Playground() {
   const { layerClassName, ...glassProps } = config;
   const named = TINTS.find((t) => t.value === config.tint);
   const active = BACKDROPS.find((b) => b.id === backdrop) ?? BACKDROPS[0];
-  const jsx = buildJsx(config);
+  const preset = PRESETS.find((p) => p.id === presetId) ?? PRESETS[0];
+  const jsx = buildJsx(config, preset);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const origin = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
@@ -154,7 +159,8 @@ export function Playground() {
           type="button"
           className="reset-btn"
           onClick={() => {
-            setConfig(PLAYGROUND_DEFAULTS);
+            // Defaults, with the geometry of whichever preset is showing.
+            setConfig({ ...PLAYGROUND_DEFAULTS, ...preset.config });
             setCustomTint(colorToHex(PLAYGROUND_DEFAULTS.tint));
           }}
         >
@@ -332,24 +338,39 @@ export function Playground() {
                   {/* Held dead centre of the stage, outside the scroller, so the
                       backdrop moves and the glass does not. */}
                   <div className="stage-center">
-                    <div className="pg-card">
-                      <LiquidGlass {...glassProps} layerClassName={layerClassName || undefined}>
-                        <div className="pg-card-inner">
-                          <div className="card-row" style={{ marginBottom: 14 }}>
-                            <h3>Liquid Glass</h3>
-                            <span className="pg-live">live</span>
-                          </div>
-                          <p>
-                            Drag the backdrop under the panel and the rim answers — the displacement
-                            map is rebuilt from the component&apos;s measured size.
-                          </p>
-                          <div className="pg-actions">
-                            <i className="primary">Continue</i>
-                            <i className="ghost">Later</i>
-                          </div>
-                        </div>
-                      </LiquidGlass>
-                    </div>
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={preset.id}
+                        className="pg-card"
+                        data-preset={preset.id}
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        <LiquidGlass {...glassProps} layerClassName={layerClassName || undefined}>
+                          <PresetPreview id={preset.id} />
+                        </LiquidGlass>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="pg-presetbar" role="group" aria-label="Preview element">
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="bg-chip"
+                        data-on={presetId === p.id}
+                        aria-pressed={presetId === p.id}
+                        onClick={() => {
+                          setPresetId(p.id);
+                          setConfig((c) => ({ ...c, ...p.config }));
+                        }}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
                   </div>
 
                   <div className="pg-bgbar" role="group" aria-label="Preview backdrop">
