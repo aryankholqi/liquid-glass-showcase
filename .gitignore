@@ -9,3 +9,6 @@ npm-debug.log*
 !.env.example
 next-env.d.ts
 tsconfig.tsbuildinfo
+test-export.json
+.vercel
+.env*
