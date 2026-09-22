@@ -22,7 +22,7 @@ export function SiteNav({ current }: { current?: "home" | keyof typeof PAGE_LABE
         ) : (
           <>
             <span className="nav-name">liquid-glass-cli</span>
-            <span className="nav-ver">v1.3</span>
+            <span className="nav-ver">v1.4</span>
           </>
         )}
       </div>

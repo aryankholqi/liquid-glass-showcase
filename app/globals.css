@@ -221,6 +221,62 @@ input[type="range"] { accent-color: var(--color-accent); }
 .feature h4 { font-size: 16px; margin: 0 0 8px; }
 .feature p { font-size: 13px; line-height: 1.55; color: var(--color-neutral-500); margin: 0; text-wrap: pretty; }
 
+/* ---------- figma plugin ---------- */
+.figma-section { padding-bottom: 96px; scroll-margin-top: 80px; }
+.figma {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+  padding-top: 56px; border-top: 1px solid var(--color-divider);
+}
+.figma h2 { font-size: 36px; line-height: 1.1; letter-spacing: -0.025em; margin: 0 0 14px; max-width: 18ch; }
+.figma-lede { font-size: 15px; line-height: 1.65; color: var(--color-neutral-400); max-width: 50ch; margin: 0 0 26px; text-wrap: pretty; }
+.figma-lede code { font-family: var(--font-mono); font-size: 13px; color: var(--color-accent-300); }
+.figma .steps { margin-bottom: 28px; }
+
+.steps { list-style: none; counter-reset: step; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.steps li { counter-increment: step; position: relative; padding-left: 40px; }
+.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute; left: 0; top: 1px;
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px;
+  font-family: var(--font-mono); font-weight: 500; font-size: 10px; line-height: 1;
+  color: var(--color-accent-300); background: var(--color-accent-900);
+}
+.steps h4 { font-size: 14.5px; margin: 0 0 3px; line-height: 1.5; }
+.steps p { font-size: 13px; line-height: 1.55; color: var(--color-neutral-500); margin: 0; text-wrap: pretty; }
+
+.fp-stage { display: grid; place-items: center; height: 460px; padding: 24px; }
+.fp-window {
+  position: relative; width: 100%; max-width: 330px;
+  border-radius: 12px; overflow: hidden;
+  background: #2c2c2c; color: #f0f0f0;
+  font-size: 11px; line-height: 1.45;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.fp-titlebar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  font-weight: 600; border-bottom: 1px solid #3d3d3d;
+}
+.fp-logo { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--color-accent-400); background: linear-gradient(135deg, rgba(145, 132, 217, 0.7), rgba(145, 132, 217, 0.1)); }
+.fp-close { margin-left: auto; font-size: 15px; line-height: 1; color: #9a9a9a; }
+.fp-section { padding: 12px 14px; }
+.fp-section + .fp-section { border-top: 1px solid #3d3d3d; }
+.fp-h { font-weight: 600; margin-bottom: 8px; }
+.fp-card { border: 1px solid #3d3d3d; border-radius: 8px; padding: 10px; }
+.fp-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fp-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 8px; margin-top: 8px; font-family: var(--font-mono); font-size: 10.5px; }
+.fp-values div { background: #383838; border-radius: 4px; padding: 4px 6px; }
+.fp-values span { display: block; font-family: var(--font-body); font-size: 9.5px; color: #9a9a9a; }
+.fp-btn { display: inline-block; font-weight: 500; border-radius: 5px; padding: 5px 9px; border: 1px solid #4a4a4a; white-space: nowrap; }
+.fp-btn.primary { background: #0d99ff; border-color: #0d99ff; color: #fff; }
+.fp-export { display: block; text-align: center; margin-top: 10px; padding: 6px 10px; }
+.fp-command {
+  margin: 0; padding: 8px; border-radius: 6px; background: #383838;
+  font: 10px/1.5 var(--font-mono); color: #e6e6e6; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.fp-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; color: #9a9a9a; }
+
+.props-table.two .props-head, .props-table.two .props-row { grid-template-columns: 220px 1fr; }
+
 /* ---------- playground ---------- */
 .pg-section { padding-bottom: 96px; scroll-margin-top: 80px; }
 .pg-head {
@@ -631,6 +687,8 @@ input[type="range"] { accent-color: var(--color-accent); }
 
 @media (max-width: 880px) {
   .hero { grid-template-columns: 1fr; gap: 40px; }
+  .figma { grid-template-columns: 1fr; gap: 40px; }
+  .figma h2 { font-size: 30px; }
   .hero h1 { font-size: 44px; }
   .stage { height: 340px; }
   .nav-hide { display: none; }
@@ -646,6 +704,11 @@ input[type="range"] { accent-color: var(--color-accent); }
   .hero h1 { font-size: clamp(28px, 8.6vw, 36px); max-width: none; margin-bottom: 14px; }
   .hero-lede { font-size: 15px; max-width: none; }
   .features { grid-template-columns: 1fr; }
+  .figma-section { padding-bottom: 64px; }
+  .figma { padding-top: 40px; gap: 32px; }
+  .figma h2 { font-size: clamp(24px, 7vw, 28px); max-width: none; }
+  .figma-lede { font-size: 14px; }
+  .stage.fp-stage { height: auto; padding: 28px 16px; }
   .install { flex-wrap: nowrap; align-items: baseline; gap: 8px; padding: 10px 12px 10px 14px; }
   .install-sigil { font-size: 12px; line-height: 1.4; }
   .install code { flex: 1 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }

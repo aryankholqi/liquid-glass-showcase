@@ -3,8 +3,10 @@ import { HeroDemo, Typewriter } from "@/components/hero-demo";
 import { Playground } from "@/components/playground";
 import { Reveal } from "@/components/reveal";
 import { CopyButton } from "@/components/copy-button";
+import { FigmaPluginMock } from "@/components/figma-plugin-mock";
 import { SiteFooter, SiteNav } from "@/components/site-chrome";
 import { INSTALL_COMMAND } from "@/lib/props";
+import { FIGMA_PLUGIN_URL, FIGMA_STEPS } from "@/lib/figma-plugin";
 
 const FEATURES = [
   {
@@ -100,6 +102,53 @@ export default function Home() {
               <p>{f.body}</p>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      <section id="figma" className="figma-section pad">
+        <div className="figma wrap">
+          <div>
+            <Reveal>
+              <div className="badge">
+                <i />
+                Figma plugin · Liquid Glass Export
+              </div>
+            </Reveal>
+            <Reveal index={1}>
+              <h2>Design the glass in Figma. Pull it into React.</h2>
+            </Reveal>
+            <Reveal index={2}>
+              <p className="figma-lede">
+                Figma&apos;s Glass effect maps almost one to one onto <code>&lt;LiquidGlass&gt;</code>.
+                The plugin reads each card&apos;s glass settings, geometry and content, so a design
+                becomes a component without anyone retyping values.
+              </p>
+            </Reveal>
+            <Reveal index={3}>
+              <ol className="steps">
+                {FIGMA_STEPS.map((step) => (
+                  <li key={step.title}>
+                    <h4>{step.title}</h4>
+                    <p>{step.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
+            <Reveal index={3}>
+              <div className="cta-row">
+                <a className="btn-outline" href={FIGMA_PLUGIN_URL}>
+                  Get the plugin
+                </a>
+                <Link className="btn-quiet" href="/docs#figma">
+                  How to use it
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+
+          <Reveal index={1}>
+            <FigmaPluginMock />
+          </Reveal>
         </div>
       </section>
 

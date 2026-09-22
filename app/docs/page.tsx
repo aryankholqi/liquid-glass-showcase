@@ -5,10 +5,12 @@ import { CopyButton } from "@/components/copy-button";
 import { Reveal } from "@/components/reveal";
 import { SiteFooter, SiteNav } from "@/components/site-chrome";
 import { INSTALL_COMMAND, PROP_ROWS, RECIPES, USAGE_SNIPPET } from "@/lib/props";
+import { FIGMA_MAPPING, FIGMA_PLUGIN_URL, PULL_COMMAND, PULL_OPTIONS } from "@/lib/figma-plugin";
 
 export const metadata: Metadata = {
   title: "Docs — liquid-glass-cli",
-  description: "Installation, usage, props and browser support for the Liquid Glass component.",
+  description:
+    "Installation, usage, props, the Liquid Glass Export Figma plugin and browser support for the Liquid Glass component.",
 };
 
 export default function DocsPage() {
@@ -23,6 +25,10 @@ export default function DocsPage() {
           <a href="#usage">Usage</a>
           <a href="#props">Props</a>
           <a href="#recipes">Recipes</a>
+          <a href="#figma">Figma plugin</a>
+          <a href="#figma-export">Export from Figma</a>
+          <a href="#figma-pull">Pull into React</a>
+          <a href="#figma-mapping">Figma → props</a>
           <a href="#support">Browser support</a>
         </aside>
 
@@ -106,6 +112,137 @@ export default function DocsPage() {
                     <h4>{r.title}</h4>
                     <p>{r.note}</p>
                     <code>{r.code}</code>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </Reveal>
+
+          <Reveal>
+            <section id="figma" className="docs-section">
+              <h2>Figma plugin</h2>
+              <p>
+                <strong>Liquid Glass Export</strong> turns a card that uses Figma&apos;s Glass effect
+                into a <code>&lt;LiquidGlass&gt;</code> component. It reads the glass settings,
+                geometry and content, so nobody has to retype values from the inspect panel.
+              </p>
+              <ol className="steps">
+                <li>
+                  <h4>Install it</h4>
+                  <p>
+                    Open <a href={FIGMA_PLUGIN_URL}>Liquid Glass Export</a> on Figma Community and
+                    press <strong>Open in…</strong> or <strong>Save</strong>.
+                  </p>
+                </li>
+                <li>
+                  <h4>Run it</h4>
+                  <p>
+                    In any file, open <strong>Actions → Plugins → Liquid Glass Export</strong>. It
+                    works in Design mode and in Dev Mode&apos;s inspect panel.
+                  </p>
+                </li>
+              </ol>
+            </section>
+          </Reveal>
+
+          <Reveal>
+            <section id="figma-export" className="docs-section">
+              <h2>Export from Figma</h2>
+              <ol className="steps">
+                <li>
+                  <h4>Select one or more cards</h4>
+                  <p>
+                    The plugin lists every selected card with its glass values. Click a name to jump
+                    to the layer.
+                  </p>
+                </li>
+                <li>
+                  <h4>Press Export</h4>
+                  <p>
+                    The cards are uploaded and the plugin shows a pull command with a 12-character
+                    export ID. Press <strong>Copy command</strong> and send it to whoever builds the
+                    UI.
+                  </p>
+                </li>
+              </ol>
+              <p>A layer counts as a card when:</p>
+              <ul>
+                <li>it carries a visible Glass effect itself — its children become the content, or</li>
+                <li>
+                  it is a frame whose child layer carries the Glass effect. The glass layer supplies
+                  tint, corners and shadow. If it covers the frame, the frame supplies size and
+                  layout; if it is smaller, the card takes the glass layer&apos;s size and only the
+                  layers sitting on it.
+                </li>
+              </ul>
+              <p>
+                Auto layout, text and shapes become Tailwind markup, including stacked solid and
+                gradient fills, solid strokes, drop and inner shadows, and layer and background
+                blurs. Frames without auto layout are rebuilt from where their layers sit. Images
+                and vectors are left as placeholders for you to export.
+              </p>
+            </section>
+          </Reveal>
+
+          <Reveal>
+            <section id="figma-pull" className="docs-section">
+              <h2>Pull into React</h2>
+              <p>
+                Run the command from the plugin in your project root. It adds{" "}
+                <code>liquid-glass</code> if the project doesn&apos;t have it yet, then writes each
+                card to <code>components/glass/&lt;layer-name&gt;.tsx</code>.
+              </p>
+              <div className="install">
+                <span className="install-sigil">$</span>
+                <code>{PULL_COMMAND}</code>
+              </div>
+              <p style={{ margin: "16px 0" }}>Options:</p>
+              <div className="props-table two">
+                <div className="props-head">
+                  <span>Option</span>
+                  <span>Description</span>
+                </div>
+                {PULL_OPTIONS.map((row) => (
+                  <div className="props-row" key={row.name}>
+                    <span className="props-name">{row.name}</span>
+                    <span className="props-desc">{row.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <ul style={{ marginTop: 18 }}>
+                <li>
+                  Exports expire after 7 days, and pulling one doesn&apos;t delete it — the same
+                  command works for the whole team that week.
+                </li>
+                <li>
+                  Only need the code? <strong>Copy code</strong> next to a card generates the same
+                  component inside the plugin, with no upload.
+                </li>
+                <li>
+                  Saved an export spec to disk? <code>figma import &lt;file&gt;</code> generates
+                  from it, and <code>-</code> reads stdin.
+                </li>
+                <li>
+                  What an export contains and who can read it is in the{" "}
+                  <Link href="/privacy">privacy policy</Link>.
+                </li>
+              </ul>
+            </section>
+          </Reveal>
+
+          <Reveal>
+            <section id="figma-mapping" className="docs-section">
+              <h2>Figma → props</h2>
+              <p>How each Glass setting lands on the component.</p>
+              <div className="props-table two">
+                <div className="props-head">
+                  <span>Figma</span>
+                  <span>LiquidGlass</span>
+                </div>
+                {FIGMA_MAPPING.map((row) => (
+                  <div className="props-row" key={row.figma}>
+                    <span className="props-name">{row.figma}</span>
+                    <span className="props-desc">{row.prop}</span>
                   </div>
                 ))}
               </div>
