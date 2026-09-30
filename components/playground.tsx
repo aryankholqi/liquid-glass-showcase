@@ -30,6 +30,11 @@ import {
   type GlassConfig,
   type PresetId,
 } from "@/lib/props";
+import {
+  PLAYGROUND_PARAMS,
+  decodePlaygroundState,
+  encodePlaygroundState,
+} from "@/lib/playground-url";
 
 /** The scrollable surface behind the panel. Every preset is CSS — the elements
  *  here are only the pieces a gradient cannot draw. */
@@ -73,6 +78,43 @@ export function Playground() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const tintRef = useRef<HTMLDivElement | null>(null);
   const paletteToggleRef = useRef<HTMLButtonElement | null>(null);
+  /* Page URL without query or hash, known only once mounted. Until then the
+     URL has not been read, so nothing is written back to it either. */
+  const [pageUrl, setPageUrl] = useState<string | null>(null);
+
+  /* A shared link restores the playground. Read after mount rather than during
+     render, so the server-rendered defaults hydrate cleanly first. */
+  useEffect(() => {
+    const shared = decodePlaygroundState(new URLSearchParams(window.location.search));
+    if (shared) {
+      setConfig(shared.config);
+      setPresetId(shared.presetId);
+      setBackdrop(shared.backdrop);
+      setCustomTint(colorToHex(shared.config.tint));
+    }
+    setPageUrl(window.location.origin + window.location.pathname);
+  }, []);
+
+  const query = encodePlaygroundState({ config, presetId, backdrop }).toString();
+  const shareUrl = `${pageUrl ?? ""}${query ? `?${query}` : ""}#playground`;
+
+  /* Keep the address bar in step, debounced — slider drags fire on every
+     frame and browsers throttle history updates. Params the playground does
+     not own are left alone. */
+  useEffect(() => {
+    if (pageUrl === null) return;
+    const id = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      PLAYGROUND_PARAMS.forEach((key) => params.delete(key));
+      new URLSearchParams(query).forEach((value, key) => params.set(key, value));
+      const search = params.toString();
+      const next = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+      if (next !== window.location.pathname + window.location.search + window.location.hash) {
+        window.history.replaceState(window.history.state, "", next);
+      }
+    }, 250);
+    return () => clearTimeout(id);
+  }, [pageUrl, query]);
 
   /* The palette floats over the sliders, so a press anywhere outside the tint
      block, or Escape, puts it away. */
@@ -155,17 +197,20 @@ export function Playground() {
             matching JSX.
           </p>
         </div>
-        <button
-          type="button"
-          className="reset-btn"
-          onClick={() => {
-            // Defaults, with the geometry of whichever preset is showing.
-            setConfig({ ...PLAYGROUND_DEFAULTS, ...preset.config });
-            setCustomTint(colorToHex(PLAYGROUND_DEFAULTS.tint));
-          }}
-        >
-          Reset to defaults
-        </button>
+        <div className="pg-actions">
+          <CopyButton value={shareUrl} label="Copy link" className="reset-btn" />
+          <button
+            type="button"
+            className="reset-btn"
+            onClick={() => {
+              // Defaults, with the geometry of whichever preset is showing.
+              setConfig({ ...PLAYGROUND_DEFAULTS, ...preset.config });
+              setCustomTint(colorToHex(PLAYGROUND_DEFAULTS.tint));
+            }}
+          >
+            Reset to defaults
+          </button>
+        </div>
       </div>
 
       <div className="pg-grid">

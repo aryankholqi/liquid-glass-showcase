@@ -291,6 +291,7 @@ input[type="range"] { accent-color: var(--color-accent); }
   border-radius: var(--radius-md); font-size: 12.5px; cursor: pointer; transition: 0.16s;
 }
 .reset-btn:hover { border-color: var(--color-accent); color: var(--color-accent-300); }
+.pg-actions { flex: none; display: flex; gap: 8px; }
 .pg-grid { display: grid; grid-template-columns: 296px 1fr; gap: 22px; align-items: start; }
 .pg-grid > * { min-width: 0; }
 
@@ -737,7 +738,8 @@ input[type="range"] { accent-color: var(--color-accent); }
      stretching the width of the panel. */
   .pg-bgbar { left: 12px; bottom: 10px; max-width: calc(100% - 24px); }
   .stage-note.right { display: none; }
-  .pg-head .reset-btn { align-self: stretch; }
+  .pg-head .pg-actions { align-self: stretch; }
+  .pg-head .reset-btn { flex: 1; }
   .code-pane { padding: 18px 14px; font-size: 11.5px; }
   .footer-inner { flex-direction: column; gap: 14px; align-items: flex-start; }
   .docs-shell { padding-top: 34px; padding-bottom: 64px; }
