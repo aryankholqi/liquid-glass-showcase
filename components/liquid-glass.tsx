@@ -7,11 +7,25 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
+export type LiquidGlassVariant = "regular" | "clear";
+
 export interface LiquidGlassProps {
   children?: ReactNode;
+  /**
+   * Apple's two materials. `regular` is the frosted, tinted glass used for
+   * bars and controls; `clear` is the more transparent glass meant to sit over
+   * rich media. Any prop passed explicitly wins over the variant's preset.
+   */
+  variant?: LiquidGlassVariant;
+  /**
+   * Responds to touch the way Apple's interactive glass does: light gathers
+   * under the pointer and the panel swells on press with a springy settle.
+   */
+  interactive?: boolean;
   /** Fill layered on top of the refracted backdrop. Any CSS colour. */
   tint?: string;
   /**
@@ -61,6 +75,21 @@ const IOR = 1.46;
 const MAX_DEVIATION = Math.tan(Math.PI / 2 - Math.asin(1 / IOR));
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/** Defaults each variant supplies for the props it shapes. */
+const VARIANTS: Record<
+  LiquidGlassVariant,
+  { tint: string; frost: number; dispersion: number; lightIntensity: number }
+> = {
+  regular: { tint: "rgba(17, 21, 27, 0.8)", frost: 3, dispersion: 100, lightIntensity: 38 },
+  // Barely tinted so media shows through; the brighter rim keeps the edge legible.
+  clear: { tint: "rgba(17, 21, 27, 0.08)", frost: 0.5, dispersion: 60, lightIntensity: 56 },
+};
+
+/** How far an interactive panel swells while pressed. */
+const PRESS_SCALE = 1.035;
+/** Overshoots slightly before settling, like the spring UIKit drives glass with. */
+const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
 /**
  * Superness of the corner, on the scale CSS `corner-shape: superellipse(k)`
@@ -270,26 +299,38 @@ function specularRing(angle: number, peak: number): string {
 
 export function LiquidGlass({
   children,
-  tint = "rgba(17, 21, 27, 0.8)",
+  variant = "regular",
+  interactive = false,
+  tint: tintProp,
   opacity = 100,
   cornerRadius = 48,
-  cornerSmoothing = 32,
+  cornerSmoothing = 100,
   refraction = 100,
   depth = 85,
-  dispersion = 100,
-  frost = 3,
+  dispersion: dispersionProp,
+  frost: frostProp,
   splay = 38,
   lightAngle = 45,
-  lightIntensity = 38,
+  lightIntensity: lightIntensityProp,
   borderWidth = 1,
   elevation = 22,
   layerClassName,
   className,
   style,
 }: LiquidGlassProps) {
+  const preset = VARIANTS[variant] ?? VARIANTS.regular;
+  const tint = tintProp ?? preset.tint;
+  const frost = frostProp ?? preset.frost;
+  const dispersion = dispersionProp ?? preset.dispersion;
+  const lightIntensity = lightIntensityProp ?? preset.lightIntensity;
+
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [nativeCorners, setNativeCorners] = useState(false);
+  const [reduceTransparency, setReduceTransparency] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const rawId = useId();
   const filterId = `lg-${rawId.replace(/[^a-zA-Z0-9]/g, "")}`;
 
@@ -299,6 +340,23 @@ export function LiquidGlass({
         typeof CSS.supports === "function" &&
         CSS.supports("corner-shape", "squircle")
     );
+  }, []);
+
+  // Follows the system's Reduce Transparency and Reduce Motion settings, as
+  // Apple's own glass does.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const queries = [
+      [window.matchMedia("(prefers-reduced-transparency: reduce)"), setReduceTransparency],
+      [window.matchMedia("(prefers-reduced-motion: reduce)"), setReduceMotion],
+    ] as const;
+    const cleanups = queries.map(([query, set]) => {
+      const update = () => set(query.matches);
+      update();
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    });
+    return () => cleanups.forEach((cleanup) => cleanup());
   }, []);
 
   useEffect(() => {
@@ -334,6 +392,8 @@ export function LiquidGlass({
   );
 
   const ready = measured && map !== "";
+  // With Reduce Transparency on, the backdrop is frosted out rather than bent.
+  const refracting = ready && !reduceTransparency;
   // feDisplacementMap moves a pixel by scale * (channel - 0.5) and the map only
   // reaches 127/255 at the rim, so double the offset we actually want there.
   const displacement = (refraction / 100) * band * 2;
@@ -355,6 +415,11 @@ export function LiquidGlass({
     tintAlpha >= 1
       ? tint
       : `color-mix(in srgb, ${tint} ${(tintAlpha * 100).toFixed(1)}%, transparent)`;
+  // Keeps the tint's hue but lifts it to near-opaque, so content stays legible.
+  const surfaceFill = reduceTransparency ? `rgb(from ${tint} r g b / max(alpha, 0.85))` : tintFill;
+  const frostFilter = reduceTransparency
+    ? "blur(30px) saturate(1.2)"
+    : `blur(${frost}px) saturate(1.55)`;
 
   const clip: CSSProperties = shape
     ? { clipPath: `path("${shape}")`, WebkitClipPath: `path("${shape}")` }
@@ -433,13 +498,68 @@ export function LiquidGlass({
     };
   };
 
+  /**
+   * The pointer position is written straight to CSS variables so tracking it
+   * never re-renders — and never rebuilds the masks.
+   */
+  const track = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const el = hostRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    el.style.setProperty("--lg-x", `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(2)}%`);
+    el.style.setProperty("--lg-y", `${(((event.clientY - rect.top) / rect.height) * 100).toFixed(2)}%`);
+  };
+
+  const pointerHandlers = interactive
+    ? {
+        onPointerEnter: (event: ReactPointerEvent<HTMLDivElement>) => {
+          track(event);
+          setHovered(true);
+        },
+        onPointerMove: track,
+        onPointerLeave: () => {
+          setHovered(false);
+          setPressed(false);
+        },
+        onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => {
+          track(event);
+          setPressed(true);
+        },
+        onPointerUp: () => setPressed(false),
+        onPointerCancel: () => setPressed(false),
+      }
+    : {};
+
+  const glowStrength = pressed ? 1 : hovered ? 0.45 : 0;
+  const glowRadius = Math.max(width, height) * 0.75;
+  const glow = (alpha: number) =>
+    `radial-gradient(${glowRadius.toFixed(0)}px circle at var(--lg-x, 50%) var(--lg-y, 50%), ` +
+    `rgba(255,255,255,${alpha.toFixed(3)}), rgba(255,255,255,0) 70%)`;
+  const glowTransition = reduceMotion ? undefined : "opacity 0.35s ease";
+
+  const motion: CSSProperties = interactive
+    ? {
+        scale: pressed && !reduceMotion ? String(PRESS_SCALE) : "1",
+        transition: reduceMotion ? undefined : `scale 0.5s ${SPRING}`,
+        touchAction: "manipulation",
+      }
+    : {};
+
   return (
     <div
       ref={hostRef}
       className={className}
-      style={{ position: "relative", ...shadowCorners, borderRadius: cornerRadius, ...style }}
+      {...pointerHandlers}
+      style={{
+        position: "relative",
+        ...shadowCorners,
+        borderRadius: cornerRadius,
+        ...motion,
+        ...style,
+      }}
     >
-      {ready && (
+      {refracting && (
         <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
           <defs>
             <filter
@@ -522,10 +642,14 @@ export function LiquidGlass({
             boxShadow: [
               `0 ${(elevation * 0.45).toFixed(1)}px ${(elevation * 1.15).toFixed(1)}px ${(
                 -elevation * 0.35
-              ).toFixed(1)}px rgba(0,0,0,0.34)`,
+              ).toFixed(1)}px rgba(0,0,0,0.28)`,
               `0 ${(elevation * 0.12).toFixed(1)}px ${(elevation * 0.3).toFixed(1)}px ${(
                 -elevation * 0.1
-              ).toFixed(1)}px rgba(0,0,0,0.2)`,
+              ).toFixed(1)}px rgba(0,0,0,0.18)`,
+              // A wide, faint ambient pool — Apple's glass floats rather than casts.
+              `0 ${(elevation * 0.9).toFixed(1)}px ${(elevation * 2.8).toFixed(1)}px ${(
+                -elevation * 0.4
+              ).toFixed(1)}px rgba(0,0,0,0.12)`,
             ].join(", "),
           }}
         />
@@ -538,8 +662,8 @@ export function LiquidGlass({
         style={{
           ...layer,
           ...backdropCorners,
-          backdropFilter: ready ? `url(#${filterId})` : undefined,
-          WebkitBackdropFilter: ready ? `url(#${filterId})` : undefined,
+          backdropFilter: refracting ? `url(#${filterId})` : undefined,
+          WebkitBackdropFilter: refracting ? `url(#${filterId})` : undefined,
         }}
       />
 
@@ -550,11 +674,40 @@ export function LiquidGlass({
         style={{
           ...layer,
           ...backdropCorners,
-          background: tintFill,
-          backdropFilter: `blur(${frost}px) saturate(1.55)`,
-          WebkitBackdropFilter: `blur(${frost}px) saturate(1.55)`,
+          background: surfaceFill,
+          backdropFilter: frostFilter,
+          WebkitBackdropFilter: frostFilter,
         }}
       />
+
+      {/* gloss — the faint top-down sheen of a lit glass face, coming from the
+          same side as the specular highlight */}
+      {light > 0 && (
+        <div
+          aria-hidden="true"
+          className={layerClassName}
+          style={{
+            ...layer,
+            background: `linear-gradient(${lightAngle + 90}deg, rgba(255,255,255,${(
+              0.14 * light
+            ).toFixed(3)}) 0%, rgba(255,255,255,0) 55%)`,
+          }}
+        />
+      )}
+
+      {/* touch glow — light gathering on the face under the pointer */}
+      {interactive && measured && (
+        <div
+          aria-hidden="true"
+          className={layerClassName}
+          style={{
+            ...layer,
+            background: glow(0.16),
+            opacity: glowStrength,
+            transition: glowTransition,
+          }}
+        />
+      )}
 
       {/* bevel shading. An inset shadow is shaped by the radius rather than
           clipped by it, so this layer keeps one even in the fallback — there it
@@ -596,6 +749,20 @@ export function LiquidGlass({
           aria-hidden="true"
           className={layerClassName}
           style={maskLayer(borderWidth * 2, 0, 0.95 * light)}
+        />
+      )}
+
+      {/* the rim catching the touch — brightest where the pointer is nearest */}
+      {interactive && ready && (
+        <div
+          aria-hidden="true"
+          className={layerClassName}
+          style={{
+            ...maskLayer(Math.max(borderWidth * 2, band * 0.8), band * 0.2, 0),
+            background: glow(0.85),
+            opacity: glowStrength,
+            transition: glowTransition,
+          }}
         />
       )}
 
